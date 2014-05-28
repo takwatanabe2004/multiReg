@@ -1,0 +1,56 @@
+*~
+**~
+\#*\#
+*.mat
+Dataset
+Benchmark
+#*.csv
+#.gitignore
+Dataset/
+Data_local/Yeo/
+Data_local/ADHD347/
+Rlibrary/
+.Rhistory
+*.RData
+*.Rdata
+*mexa64
+*mexglx
+*mexmac
+*mexmaci
+*mexw32
+*mexw64
+*mexmaci64
+t_random_trial.m
+*.o
+*.a
+*.fig
+*.png
+*.nii
+*.eps
+*.bmp
+*.node
+*.edge
+*.hdr
+*.img
+*.jpg
+*.pdf
+*.tiff
+*.TIF
+*.PNG
+*.tif
+*.FIG
+.html
+garbage
+#--------------------------------------#
+#| End patterns with a forward slash (/) to specify a directory
+#| You can negate a pattern by starting it with an exclamation point (!)
+#| A question mark (?) matches a single character
+#| Brackets enclosing characters separated by a hyphen ([0-9]) matches any character between them.
+
+#|--- Examples ---|#
+#| *.a # no .a files
+#| !lib.a # but do track lib.a, even though you're ignoring .a files above
+#| /TODO # only ignore the root TODO file, not subdir/TODO
+#| build/ # ignore all files in the build/ directory
+#| doc/*.txt # ignore doc/notes.txt, but not doc/server/arch.txt
+#| *.[oa] # ignore file ending in .o or .a
