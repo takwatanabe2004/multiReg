@@ -91,14 +91,6 @@ for k=1:maxiter
         time.inner = tic;
     end
     
-
-    
-    %======================================================================
-    % update second variable block: (v)=(v1,v2)
-    %======================================================================
-    v1 = soft(w+u1,   lambda/rho);
-    v2 = soft(Cw+u2, gamma/rho);
-
 %     keyboard
     %======================================================================
     % update first variable block: (w) - done via APGM approximation
@@ -111,6 +103,12 @@ for k=1:maxiter
     
     % compute terms used moer than once
     Cw = C*w; 
+    
+    %======================================================================
+    % update second variable block: (v)=(v1,v2)
+    %======================================================================
+    v1 = soft(w+u1,   lambda/rho);
+    v2 = soft(Cw+u2, gamma/rho);
 
     %======================================================================
     % dual updates
