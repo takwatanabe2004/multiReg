@@ -7,8 +7,8 @@ rmpath([rootdir,'/.git'])
 
 
 %-------------------------------------------------------------------------%
-rmpath([rootdir,'/admm_scripts/admm_scripts_old'])
-
+rmpath([rootdir,'/admm_scripts/admm_scripts_binary_classif/old_connectomes'])
+rmpath([rootdir,'/simulation/15by15/old_stuffs'])
 %-------------------------------------------------------------------------%
 % - remove directory not of interest (02/27/2014)
 %-------------------------------------------------------------------------%
