@@ -8,13 +8,12 @@
 % x-coordinate in the roiMNI...doing this will make the sampling order agree with
 % the order of lexigraphic indexing (see t_j24_study_roiMNI_indexing2.m)
 %=========================================================================%
-% (05/28/2014)
 %%
 clear
 purge
 
-fsave=true;
-parcellation = 'Grid1068'; % {'Grid326','Grid1068','WashU'}
+fsave=0;
+parcellation = 'Grid326'; % {'Grid326','Grid1068'}
 %% 
 outPath=[get_rootdir, '/data_local/graphinfo/graph_info_',parcellation,'.mat']
 outVars={'adjmat', 'C', 'coord', 'roiMNI', 'roiMNI_flipx', 'timeStamp',...
@@ -51,7 +50,9 @@ coord.N=prod(coord.NSIZE);
 coord.rlex = sub2ind(coord.NSIZE, coord.r(:,1), coord.r(:,2), coord.r(:,3));
 
 % check if the seeds are sampled in lexicographic order
-isequal(coord.rlex,sort(coord.rlex))
+if ~isequal(coord.rlex,sort(coord.rlex))
+    error('meh....debug')
+end
 %% create 6d-coordinate...which are coordinates of the edges
 %==================================================================================
 % s: 6d coordinates... s=(r1,r2), r1=(x1,y1,z1), r2=(x2,y2,z2)
