@@ -1,6 +1,6 @@
-function output=tak_apgm_flas_regr(X,y,options,C,wtrue)
-% output=tak_apgm_flas_regr(X,y,options,C,wtrue)
-% (05/29/2014)
+function output=tak_cppd_flas_regr(X,y,options,C,wtrue)
+% output=tak_cppd_flas_regr(X,y,options,C,wtrue)
+% (06/08/2014)
 %=========================================================================%
 % - ADMM fused lasso regression
 %    1/2||y-Xw||^2 + lambda||w||_1 + gamma||C*w||_1
@@ -14,11 +14,9 @@ function output=tak_apgm_flas_regr(X,y,options,C,wtrue)
 lambda=options.lambda;
 gamma=options.gamma;
 
-% augmented lagrangian parameters
-rho=options.rho;
-
-% APGM parameter
+% CPPD parameter
 tau=options.tau;
+sigma=options.sigma;
 
 %==========================================================================
 % termination criterion
@@ -34,22 +32,22 @@ silence   = options.termin.silence;     % <- display termination condition
 if isfield(options,'K')
     K=options.K;
 else
-    K=tak_admm_inv_lemma(X,tau/rho);
+    K=tak_admm_inv_lemma(X,tau);
 end
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
-[e,p]=size(C);
+p = size(X,2);
+F = [lambda*speye(p);gamma*C];
+s=size(F,1);
 
 % primal variable
 w =zeros(p,1); 
-v1=zeros(p,1);
-v2=zeros(e,1);
+wbar = zeros(p,1);
 
-% dual variables
-u1=zeros(p,1);
-u2=zeros(e,1);
+% dual variable
+u=zeros(s,1);
 
 %==========================================================================
 % function handles
@@ -59,32 +57,27 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 %==========================================================================
 % precompute terms used throughout admm
 %==========================================================================
-Xty=(X'*y);
-Ct = C';    % <- divergence operator
-CtC = C'*C; % <- Laplacian operator
-DELTA = rho/tau;
+tau_Xty=tau*(X'*y);
+Ft = F';
 
 %=========================================================================%
-% keep track of function value
+% keep track of function value (consider tracking SPP-function value)
 %=========================================================================%
-fval = @(w,v1,v2) 1/2*norm(y-X*w)^2 + lambda*norm(v1,1) + gamma*norm(v2,1);
-fval2=@(w) 1/2*norm(y-X*w)^2 + lambda*norm(w,1) + gamma*norm(C*w,1);
-u_old=zeros(p+e,1);
+fval = @(w) 1/2*norm(y-X*w)^2 + norm(F*w,1);
 %% begin admm iteration
 time.total=tic;
 time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
 w_old=w;
-Cw=C*w;
+Fw=F*w;
 % disp('go')
 
 % keep track of function value
 fvalues=zeros(maxiter,1);
 if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-%     fvalues(k)=fval(w,v1,v2);
-    fvalues(k)=fval2(v1);
+    fvalues(k)=fval(w);
     if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
 
     if mod(k,progress)==0 && k~=1        
@@ -95,41 +88,28 @@ for k=1:maxiter
     
 %     keyboard
     %======================================================================
-    % update first variable block: (w) - done via APGM approximation
+    % update dual variable u
     %======================================================================
-    % update w
-    %-------------------------------------------------------------------------%
-    gk = rho * ( w + CtC*w - v1 - Ct*v2 + u1 + Ct*u2 );
-    rk = w - tau*gk + (tau/rho)*Xty;
-    w = rk - (tau/rho)*(K*(X*rk));
-    %-------------------------------------------------------------------------%
-% %     gk = [w_old; CtC*w_old] - [v1;Ct*v2] + [u1; Ct*u2]; % <- gradient of the AL quadratic term
-%     gk = (w_old-v1+u1) + Ct*(Cw-v2+u2);
-%     q=(Xty + DELTA*(w_old-tau*gk));
-%     w=q/DELTA - 1/DELTA^2*(K*(X*q));
-    
-    % compute terms used moer than once
-    Cw = C*w; 
+    % update u
+    tmp = u+sigma*F*wbar;
+    u = tmp - soft(tmp/sigma,1/sigma);
     
     %======================================================================
-    % update second variable block: (v)=(v1,v2)
+    % update primal variable w
     %======================================================================
-    v1 = soft(w+u1,   lambda/rho);
-    v2 = soft(Cw+u2, gamma/rho);
+    r = w - tau*(Ft*u) + tau_Xty;
+    w = r - tau*(K*(X*r));
 
     %======================================================================
-    % dual updates
-    %======================================================================    
-    u1=u1+(w-v1);
-    u2=u2+(Cw-v2);
-    u=[u1;u2];
-
+    % update wbar
+    %======================================================================
+    wbar = 2*w - w_old;
+    
     %======================================================================
     % Check termination criteria
     %======================================================================
     %%% relative change in primal variable norm %%%
-%     rel_change=norm(w-w_old)/norm(w_old);
-    rel_change=norm(u-u_old)/norm(u_old);
+    rel_change=norm(w-w_old)/norm(w_old);
     rel_changevec(k)=rel_change;
     time.rel_change=tic;
     
@@ -143,21 +123,16 @@ for k=1:maxiter
     
     % needed to compute relative change in primal variable
     w_old=w;
-    u_old=u;
 end
-% fvalues(k+1)=fval(w,v1,v2); % <- final function value
-fvalues(k+1)=fval2(w); % <- final function value
+fvalues(k+1)=fval(w); % <- final function value
 fvalues=fvalues(1:k+1);
 time.total=toc(time.total);
 %% organize output
 % primal variables
 output.w=w;
-output.v1=v1;
-output.v2=v2;
 
 % dual variables
-output.u1=u1;
-output.u2=u2;
+output.u=u;
 
 % time it took for the algorithm to converge
 % output.time=time.total;

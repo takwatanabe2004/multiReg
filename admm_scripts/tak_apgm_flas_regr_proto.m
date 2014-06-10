@@ -1,4 +1,4 @@
-function output=tak_apgm_flas_regr(X,y,options,C,wtrue)
+function output=tak_apgm_flas_regr_proto(X,y,options,C,wtrue)
 % output=tak_apgm_flas_regr(X,y,options,C,wtrue)
 % (05/29/2014)
 %=========================================================================%
@@ -34,7 +34,7 @@ silence   = options.termin.silence;     % <- display termination condition
 if isfield(options,'K')
     K=options.K;
 else
-    K=tak_admm_inv_lemma(X,tau/rho);
+    K=tak_admm_inv_lemma(X,tau);
 end
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
@@ -62,7 +62,7 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 Xty=(X'*y);
 Ct = C';    % <- divergence operator
 CtC = C'*C; % <- Laplacian operator
-DELTA = rho/tau;
+% DELTA = rho/tau;
 
 %=========================================================================%
 % keep track of function value
@@ -100,8 +100,8 @@ for k=1:maxiter
     % update w
     %-------------------------------------------------------------------------%
     gk = rho * ( w + CtC*w - v1 - Ct*v2 + u1 + Ct*u2 );
-    rk = w - tau*gk + (tau/rho)*Xty;
-    w = rk - (tau/rho)*(K*(X*rk));
+    rk = w - tau*gk + (tau)*Xty;
+    w = rk - (tau)*(K*(X*rk));
     %-------------------------------------------------------------------------%
 % %     gk = [w_old; CtC*w_old] - [v1;Ct*v2] + [u1; Ct*u2]; % <- gradient of the AL quadratic term
 %     gk = (w_old-v1+u1) + Ct*(Cw-v2+u2);
