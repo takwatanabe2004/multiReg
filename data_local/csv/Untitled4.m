@@ -20,3 +20,4 @@ SubjList=raw1(2:end)
 exclusionCriteriaName = raw2{1}
 mask = cell2mat(raw2(2:end))
 %%
+sum(mask)
