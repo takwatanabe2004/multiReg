@@ -7,18 +7,16 @@ purge
 
 grid='Grid326'; % {'Grid326','Grid1068','WashU'}
 
-
+load([get_rootdir,'/data_local/designMatrix_FC_',grid,'.mat'])
+load([get_rootdir,'/data_local/yeoLabelInfo/yeo_info_',grid,'_dilated5mm.mat'])
 %%
-% visualization of the result
-purge
+% some plot options
 cbarOption={'fontsize',22','fontweight','b','ytick',[-.66,0,.66],...
     'YTickLabel',{' <0',' =0',' >0'},'TickLength',[0 0]};
 textOption1={'fontweight','b','fontsize',9};
 lineOption = {'color','k','linewidth',0.5};
 lwidth_deg=2.5;
-%%
-load([get_rootdir,'/data_local/designMatrix_FC_',grid,'.mat'])
-load([get_rootdir,'/data_local/yeoLabelInfo/yeo_info_',grid,'_dilated5mm.mat'])
+
 
 % circularly shift 1 indices (so "unlabeled" is at the final label index)
 roiLabel=roiLabel-1;

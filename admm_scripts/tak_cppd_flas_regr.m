@@ -2,12 +2,13 @@ function output=tak_cppd_flas_regr(X,y,options,C,wtrue)
 % output=tak_cppd_flas_regr(X,y,options,C,wtrue)
 % (06/08/2014)
 %=========================================================================%
-% - ADMM fused lasso regression
+% - Chambolle & Pocke's Primal Dual algorithm for fused lasso regression
 %    1/2||y-Xw||^2 + lambda||w||_1 + gamma||C*w||_1
 %=========================================================================%
 % options.lambda
 % options.gamma
 % options.K <- optionally precompute
+% options.fval <- keep track of function values (may slow down algorithm)
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
 % penalty parameters
@@ -25,6 +26,7 @@ maxiter   = options.termin.maxiter;     % <- maximum number of iterations
 tol       = options.termin.tol;         % <- relative change in the primal variable
 progress  = options.termin.progress;    % <- display "progress" (every k iterations)
 silence   = options.termin.silence;     % <- display termination condition
+flag_fval = options.fval;               % <- keep track of function values (may slow alg.)
 
 %==========================================================================
 % Matrix K for inversion lemma (optionally precomputed...saves time during gridsearch)
@@ -74,10 +76,10 @@ Fw=F*w;
 % disp('go')
 
 % keep track of function value
-fvalues=zeros(maxiter,1);
+if flag_fval, fvalues=zeros(maxiter,1); end;
 if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    fvalues(k)=fval(w);
+    if flag_fval,  fvalues(k)=fval(w); end;   
     if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
 
     if mod(k,progress)==0 && k~=1        
@@ -114,18 +116,19 @@ for k=1:maxiter
     time.rel_change=tic;
     
     flag1=rel_change<tol;
-    if flag1 && (k>10) % allow 10 iterations of burn-in period
+    if flag1 && (k>20) % allow 20 iterations of burn-in period
         if ~silence
             fprintf('*** Primal var. tolerance reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
         end
         break
+    elseif k==maxiter
+        fprintf('*** Max number of iterations reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
     end    
     
     % needed to compute relative change in primal variable
     w_old=w;
 end
-fvalues(k+1)=fval(w); % <- final function value
-fvalues=fvalues(1:k+1);
+
 time.total=toc(time.total);
 %% organize output
 % primal variables
@@ -146,8 +149,12 @@ output.u=u;
 % the "track-record" of the relative change in primal variable
 output.rel_changevec=rel_changevec(1:k);
 
-% function value 
-output.fval=fvalues;
+% (optional) final function value
+if flag_fval,  
+    fvalues(k+1)=fval(w); 
+    fvalues=fvalues(1:k+1);
+    output.fval=fvalues;
+end;
 
 % (optional) distance to wtrue
 if exist('wtrue','var')

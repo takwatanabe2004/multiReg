@@ -65,6 +65,7 @@ options.termin.maxiter = 1000;   % <- maximum number of iterations
 options.termin.tol = 1e-6;      % <- relative change in the primal variable
 options.termin.progress = 500;   % <- display "progress" (every k iterations...set to inf to disable)
 options.termin.silence = false; % <- display termination condition
+options.fval = true; % <- keep track of function values (may slow down algorithm)
 
 %=========================================================================%
 % stuffs needed for fused lasso
