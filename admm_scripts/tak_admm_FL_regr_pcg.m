@@ -1,45 +1,41 @@
-function output=tak_admm_enet_regr(X,y,options,wtrue)
-% output=tak_admm_enet_regr(X,y,options,wtrue)
-% (05/28/2014)
-% (06/14/2014) - added defaults for "options"...and added n>p option for matrix inverse
+function output=tak_admm_FL_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
+% output=tak_admm_FL_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
+% (06/16/2014)
 %=========================================================================%
-% - ADMM elastic net regression:
-%    1/2||y-Xw||^2 + lambda||w||_1 + gamma/2||w||^2
+% - ADMM fused lasso net regression:
+%    1/2||y-Xw||^2 + lam * ||w||_1 + gamma2 * ||C*w||_1
 %=========================================================================%
-% options.lambda
-% options.gamma
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
 [n,p]=size(X);
-if(~exist('options','var')||isempty(options)), 
-    lambda=1;
-    gamma=0; 
-    
-    rho = 1;
+e=size(C,1);
+
+%=========================================================================%
+% AL paramter and termination criteria
+%=========================================================================%
+if(~exist('options','var')||isempty(options)),     
+    rho = 1e-2;
     
     maxiter = 500;
-    tol = 1e-5;
+    tol = 5e-4;
     progress = inf;
     silence = false;
 
     if p > n
-        K=tak_admm_inv_lemma(X,1/(rho+gamma));
+        K=tak_admm_inv_lemma(X,1/rho);
     end
 else
-    lambda=options.lambda;
-    gamma=options.gamma;
-
     % augmented lagrangian parameters
     rho=options.rho;
 
     %=====================================================================%
     % termination criterion
     %=====================================================================%
-    maxiter   = options.termin.maxiter;     % <- maximum number of iterations
-    tol       = options.termin.tol;         % <- relative change in the primal variable
-    progress  = options.termin.progress;    % <- display "progress" (every k iterations)
-    silence   = options.termin.silence;     % <- display termination condition
+    maxiter   = options.maxiter;     % <- maximum number of iterations
+    tol       = options.tol;         % <- relative change in the primal variable
+    progress  = options.progress;    % <- display "progress" (every k iterations)
+    silence   = options.silence;     % <- display termination condition
 
     %=====================================================================%
     % Matrix K for inversion lemma 
@@ -50,25 +46,32 @@ else
         if isfield(options,'K')
             K=options.K;
         else
-            K=tak_admm_inv_lemma(X,1/(rho+gamma));
+            K=tak_admm_inv_lemma(X,1/rho);
         end
     end
 end
 
-
-
-
-
+%=========================================================================%
+% conjugate gradient parameters
+%=========================================================================%
+if(~exist('PCG','var')||isempty(PCG))
+    PCG.tol = 1e-8;
+    PCG.maxiter = 500;
+end
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
 % primal variable
-w =zeros(p,1); 
-v=zeros(p,1);
+w  = zeros(p,1); 
+v1 = zeros(p,1);
+v2 = zeros(p,1);
+v3 = zeros(e,1);
 
 % dual variables
-u=zeros(p,1);
+u1 = zeros(p,1);
+u2 = zeros(p,1);
+u3 = zeros(e,1);
 
 %==========================================================================
 % function handles
@@ -82,11 +85,15 @@ Xty=(X'*y);
 if n >= p
     XtX = X'*X;
 end
+Ct=C';
+CtC=Ct*C;
+Ip=speye(p);
+PCG.A = CtC+2*Ip;
 
 %=========================================================================%
 % keep track of function value
 %=========================================================================%
-fval = @(w,v) 1/2 * norm(y-X*w)^2 + gamma/2*norm(w)^2 + lambda*norm(v,1);
+fval = @(w) 1/2 * norm(y-X*w)^2 + gam/2*norm(w)^2 + lam*norm(C*w,1);
 %% begin admm iteration
 time.total=tic;
 time.inner=tic;
@@ -99,7 +106,7 @@ w_old=w;
 fvalues=zeros(maxiter,1);
 if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    fvalues(k)=fval(w,v);
+    fvalues(k)=fval(w);
     if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
     
     if mod(k,progress)==0 && k~=1
@@ -108,27 +115,36 @@ for k=1:maxiter
         time.inner = tic;
     end
     
-    %======================================================================
-    % update first variable block: (w)
-    %======================================================================
-    % update w
-    if p > n
-        q=(Xty + rho*(v-u));
-        w=q/(rho+gamma) - 1/(rho+gamma)^2*(K*(X*q));
-    else
-        w = (XtX + (rho+gamma)*speye(p))\(Xty + rho*(v-u));
-    end
+    
+    % update w (conjugate gradient)
+    b = (v1+v2-u1-u2) + Ct*(v3-u3);
+    [w,~] = pcg(PCG.A, b, PCG.tol, PCG.maxiter, [],[], w);
+%     if mod(k,20)==0, keyboard, end;
 
     %======================================================================
-    % update second variable block: (v)
+    % Update primal variables
     %======================================================================
-    % update v
-    v = soft(w+u,lambda/rho);
+    % update v1 (if p > n, apply inversion lemma)
+    q=Xty + rho*(w+u1);
+    if p > n
+        v1=q/rho - 1/rho^2*(K*(X*q));
+    else
+        v1 = (XtX + rho*Ip)\q;
+    end
+    
+    % update v2
+    v2 = soft(w+u2,lam/rho);
+    
+    % update v3
+    v3 = soft(C*w+u3,gam/rho);
+
     
     %======================================================================
     % dual updates
     %======================================================================
-    u=u+(w-v);
+    u1=u1+(w-v1);
+    u2=u2+(w-v2);
+    u3=u3+(C*w-v3);
 
     %======================================================================
     % Check termination criteria
@@ -139,7 +155,7 @@ for k=1:maxiter
     time.rel_change=tic;
     
     flag1=rel_change<tol;
-    if flag1 && (k>10) % allow 10 iterations of burn-in period
+    if flag1 && (k>30) % allow 30 iterations of burn-in period
         if ~silence
             fprintf('*** Primal var. tolerance reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
         end
@@ -153,12 +169,12 @@ for k=1:maxiter
     % needed to compute relative change in primal variable
     w_old=w;
 end
-fvalues(k+1)=fval(w,v); % <- final function value
+fvalues(k+1)=fval(w); % <- final function value
 fvalues=fvalues(1:k+1);
 time.total=toc(time.total);
 %% organize output
 % primal variables
-output.w=v;
+output.w=v2;
 % output.v=v;
 
 % dual variables

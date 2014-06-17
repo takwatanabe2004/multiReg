@@ -63,8 +63,8 @@ options.L=sqrt(eigs(F'*F,1));
 % toc
 options.tau=1/(options.L^2 * options.sigma)
 options.tau = options.tau - options.tau/100; % <- safeguard (sig*tau*L^2 < 1...strict equality)
-% toc
-% return
+toc
+return
 
 
 tic

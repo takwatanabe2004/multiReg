@@ -1,6 +1,7 @@
 function output=tak_cppd_flas_regr(X,y,options,C,wtrue)
 % output=tak_cppd_flas_regr(X,y,options,C,wtrue)
 % (06/08/2014)
+% (06/14/2014) - added defaults for "options"...and added n>p option for matrix inverse
 %=========================================================================%
 % - Chambolle & Pocke's Primal Dual algorithm for fused lasso regression
 %    1/2||y-Xw||^2 + lambda||w||_1 + gamma||C*w||_1
@@ -11,39 +12,69 @@ function output=tak_cppd_flas_regr(X,y,options,C,wtrue)
 % options.fval <- keep track of function values (may slow down algorithm)
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
-% penalty parameters
-lambda=options.lambda;
-gamma=options.gamma;
+[n,p]=size(X);
 
-% CPPD parameter
-tau=options.tau;
-sigma=options.sigma;
 
-%==========================================================================
-% termination criterion
-%==========================================================================
-maxiter   = options.termin.maxiter;     % <- maximum number of iterations
-tol       = options.termin.tol;         % <- relative change in the primal variable
-progress  = options.termin.progress;    % <- display "progress" (every k iterations)
-silence   = options.termin.silence;     % <- display termination condition
-flag_fval = options.fval;               % <- keep track of function values (may slow alg.)
 
-%==========================================================================
-% Matrix K for inversion lemma (optionally precomputed...saves time during gridsearch)
-%==========================================================================
-if isfield(options,'K')
-    K=options.K;
+
+if(~exist('options','var')||isempty(options)), 
+    lambda=1;
+    gamma=1;
+
+    F = [lambda*speye(p);gamma*C];
+    
+    sigma=1; % CPPD parameter (sigma*tau L^2 < 1 must be satisfied)
+    L=sqrt(eigs(F'*F,1));
+    tau=1/(L^2 * sigma);
+    tau = tau - tau/100; % <- safeguard (sig*tau*L^2 < 1...strict equality)
+    
+    maxiter = 500;
+    tol = 1e-5;
+    progress = inf;
+    silence = false;
+    flag_fval = true;
+        
+    if p > n
+        K=tak_admm_inv_lemma(X,tau);
+    end
 else
-    K=tak_admm_inv_lemma(X,tau);
+    % penalty parameters
+    lambda=options.lambda;
+    gamma=options.gamma;
+
+    F = [lambda*speye(p);gamma*C];
+
+    % CPPD parameter
+    tau=options.tau;
+    sigma=options.sigma;
+
+    %==========================================================================
+    % termination criterion
+    %==========================================================================
+    maxiter   = options.termin.maxiter;     % <- maximum number of iterations
+    tol       = options.termin.tol;         % <- relative change in the primal variable
+    progress  = options.termin.progress;    % <- display "progress" (every k iterations)
+    silence   = options.termin.silence;     % <- display termination condition
+    flag_fval = options.fval;               % <- keep track of function values (may slow alg.)
+
+    %=====================================================================%
+    % Matrix K for inversion lemma 
+    % (optionally precomputed...saves time during gridsearch)
+    % (only use inversion lemma when p > n...else solve matrix inverse directly)
+    %=====================================================================%
+    if p > n
+        if isfield(options,'K')
+            K=options.K;
+        else
+            K=tak_admm_inv_lemma(X,tau);
+        end
+    end
 end
+s=size(F,1);
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
-p = size(X,2);
-F = [lambda*speye(p);gamma*C];
-s=size(F,1);
-
 % primal variable
 w =zeros(p,1); 
 wbar = zeros(p,1);
@@ -61,6 +92,9 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 %==========================================================================
 tau_Xty=tau*(X'*y);
 Ft = F';
+if n >=p
+    tauXtX=tau*(X'*X);
+end
 
 %=========================================================================%
 % keep track of function value (consider tracking SPP-function value)
@@ -100,7 +134,11 @@ for k=1:maxiter
     % update primal variable w
     %======================================================================
     r = w - tau*(Ft*u) + tau_Xty;
-    w = r - tau*(K*(X*r));
+    if p > n    
+        w = r - tau*(K*(X*r));
+    else
+        w = (speye(p) + tauXtX)\r;
+    end
 
     %======================================================================
     % update wbar
