@@ -1,9 +1,9 @@
-function [w,output]=tak_admm_FL_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
-% [w,output]=tak_admm_FL_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
-% (06/16/2014)
+function [w,output]=tak_admm_GN_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
+% [w,output]=tak_admm_GN_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
+% (06/18/2014)
 %=========================================================================%
 % - ADMM fused lasso net regression:
-%    1/2||y-Xw||^2 + lam * ||w||_1 + gamma2 * ||C*w||_1
+%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||C*w||^2
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
@@ -68,12 +68,10 @@ end
 w  = zeros(p,1); 
 v1 = zeros(p,1);
 v2 = zeros(p,1);
-v3 = zeros(e,1);
 
 % dual variables
 u1 = zeros(p,1);
 u2 = zeros(p,1);
-u3 = zeros(e,1);
 
 %==========================================================================
 % function handles
@@ -90,13 +88,13 @@ end
 Ct=C';
 CtC=Ct*C;
 Ip=speye(p);
-PCG.A = CtC+2*Ip;
+PCG.A = gam*CtC+2*Ip;
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
 %=========================================================================%
 if funcval
-    fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam*norm(C*w,1);
+    fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam/2*norm(C*w)^2;
 end
 %% begin admm iteration
 time.total=tic;
@@ -119,36 +117,33 @@ for k=1:maxiter
         time.inner = tic;
     end
     
-    
+    %======================================================================
+    % update first primal variable block: w
+    %=====================================================================%
     % update w (conjugate gradient)
-    b = (v1+v2-u1-u2) + Ct*(v3-u3);
+    b = rho*(v1+v2-u1-u2);
     [w,~] = pcg(PCG.A, b, PCG.tol, PCG.maxiter, [],[], w);
 %     if mod(k,20)==0, keyboard, end;
 
     %======================================================================
-    % Update primal variables
+    % Update second primal variable block: v=(v1,v2)
     %======================================================================
-    % update v1 (if p > n, apply inversion lemma)
-    q=Xty + rho*(w+u1);
+    % update v1
+    v1 = soft(w+u1,lam/rho);    
+    
+    % update v2 (if p > n, apply inversion lemma)
+    q=Xty+w+u2;
     if p > n
-        v1=q/rho - 1/rho^2*(K*(X*q));
+        v2=q - 1/rho*(K*(X*q));
     else
-        v1 = (XtX + rho*Ip)\q;
+        v2 = rho*((XtX + rho*Ip)\q);
     end
-    
-    % update v2
-    v2 = soft(w+u2,lam/rho);
-    
-    % update v3
-    v3 = soft(C*w+u3,gam/rho);
-
     
     %======================================================================
     % dual updates
     %======================================================================
     u1=u1+(w-v1);
     u2=u2+(w-v2);
-    u3=u3+(C*w-v3);
 
     %======================================================================
     % Check termination criteria
@@ -177,7 +172,7 @@ end
 time.total=toc(time.total);
 %% organize output
 % primal variables
-w=v2;
+w=v1;
 % output.w=v2;
 % output.v=v;
 

@@ -63,7 +63,7 @@ options.L = normest(F'*F)
 options.tau=1/(options.L^2 * options.sigma)
 options.tau = options.tau - options.tau/100; % <- safeguard (sig*tau*L^2 < 1...strict equality)
 % return
-% output=tak_cppd_flas_regr(X,y,options,C,wtrue)
+output=tak_cppd_flas_regr(X,y,options,C,wtrue)
 west_cppd=output.w;
 
 purge

@@ -14,5 +14,5 @@ elseif strcmpi(host,'takanori.eecs.umich.edu')
     offy=90;
     tak_imset2(gcf,1921,offy,1440,900-offy) % hp2760p
 else
-    set(gcf,'Units','pixels','Position', [1 121 1920 850]) % for my windows7 lab computer
+    set(gcf,'Units','pixels','Position', [1 222 1920 755]) % for my windows7 lab computer
 end

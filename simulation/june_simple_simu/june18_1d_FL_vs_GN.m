@@ -1,7 +1,7 @@
-%% june16_1d_flasso
-% (06/16/2014)
+%% june18_1d_FL_vs_GN
+% (06/18/2014)
 %=========================================================================%
-% - 1-d fused lasso trial
+% - My protocode for GN-penalized regression
 %=========================================================================%
 %%
 clear all;
@@ -32,6 +32,7 @@ options.maxiter = 500;   % <- maximum number of iterations
 options.tol = 5e-4;      % <- relative change in the primal variable
 options.progress = inf;   % <- display "progress" (every k iterations...set to inf to disable)
 options.silence = false; % <- display termination condition
+options.funcval = false;    % <- track function values (may slow alg.)
 %% estimate weight vector
 %-------------------------------------------------------------------------%
 % ridge regression
@@ -53,6 +54,13 @@ lam2 = 1;  % L1 penalty weight
 gam2 = 2; % fused lasso penalty weight
 [w_FL,output_FL]=tak_admm_FL_regr_pcg(X,y,lam2,gam2,options,tak_diffmat_1d(p,0),[],wtrue);
 
+%-------------------------------------------------------------------------%
+% graphnet
+%-------------------------------------------------------------------------%
+lam3 = 0;  % L1 penalty weight
+gam3 = 1; % fused lasso penalty weight
+[w_GN,output_GN]=tak_admm_GN_regr_pcg(X,y,lam3,gam3,options,tak_diffmat_1d(p,0),[],wtrue);
+
 % figure,imexp
 % subplot(241),tplot(log10(output.fval(2:end))), title('log10(function value)')
 % subplot(242),tplot(log10(output.wdist)), title('log10(||wtrue-west||)')
@@ -65,7 +73,8 @@ gam2 = 2; % fused lasso penalty weight
 %% compare methods
 % purge
 figure,imexp
-subplot(311),tstairs2(wtrue,w_RR),ylim([-1,6.5])
-subplot(312),tstairs2(wtrue,w_EN),ylim([-1,6.5])
-subplot(313),tstairs2(wtrue,w_FL),ylim([-1,6.5])
+subplot(411),tstairs2(wtrue,w_RR),ylim([-1,6.5])
+subplot(412),tstairs2(wtrue,w_EN),ylim([-1,6.5])
+subplot(413),tstairs2(wtrue,w_FL),ylim([-1,6.5])
+subplot(414),tstairs2(wtrue,w_GN),ylim([-1,6.5])
 drawnow

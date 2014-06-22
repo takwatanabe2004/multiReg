@@ -23,7 +23,7 @@ function [e,cnt] = tnormest(S,tol)
 %   $Revision: 5.14.4.8 $  $Date: 2010/11/17 11:29:16 $
 
 if nargin < 2, tol = 1.e-6; end
-maxiter = 500; % should never take this many iterations. 
+maxiter = 2500; % should never take this many iterations. 
 x = sum(abs(S),1)';
 cnt = 0;
 e = norm(x);

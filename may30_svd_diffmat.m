@@ -25,6 +25,9 @@ L1d=C1d'*C1d;
 tic
 sv_1d=svds(C1d,1)^2
 toc
+% tic
+% eigs(sparse(C1d))
+% toc
 [U1,V1]=eig(L1d);
 U1,diag(V1)'
 % %%

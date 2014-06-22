@@ -1,7 +1,6 @@
 function output=tak_admm_enet_regr(X,y,options,wtrue)
 % output=tak_admm_enet_regr(X,y,options,wtrue)
 % (05/28/2014)
-% (06/14/2014) - added defaults for "options"...and added n>p option for matrix inverse
 %=========================================================================%
 % - ADMM elastic net regression:
 %    1/2||y-Xw||^2 + lambda||w||_1 + gamma/2||w||^2
@@ -11,58 +10,37 @@ function output=tak_admm_enet_regr(X,y,options,wtrue)
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
-[n,p]=size(X);
-if(~exist('options','var')||isempty(options)), 
-    lambda=1;
-    gamma=0; 
-    
-    rho = 1;
-    
-    maxiter = 500;
-    tol = 1e-5;
-    progress = inf;
-    silence = false;
+warning('use new function ``tak_admm_EN_regr.m! (06/16/2014) ''''')
 
-    if p > n
-        K=tak_admm_inv_lemma(X,1/(rho+gamma));
-    end
+% penalty parameters
+lambda=options.lambda;
+gamma=options.gamma;
+
+% augmented lagrangian parameters
+rho=options.rho;
+
+%==========================================================================
+% termination criterion
+%==========================================================================
+maxiter   = options.termin.maxiter;     % <- maximum number of iterations
+tol       = options.termin.tol;         % <- relative change in the primal variable
+progress  = options.termin.progress;    % <- display "progress" (every k iterations)
+silence   = options.termin.silence;     % <- display termination condition
+
+%==========================================================================
+% Matrix K for inversion lemma (optionally precomputed...saves time during gridsearch)
+%==========================================================================
+if isfield(options,'K')
+    K=options.K;
 else
-    lambda=options.lambda;
-    gamma=options.gamma;
-
-    % augmented lagrangian parameters
-    rho=options.rho;
-
-    %=====================================================================%
-    % termination criterion
-    %=====================================================================%
-    maxiter   = options.termin.maxiter;     % <- maximum number of iterations
-    tol       = options.termin.tol;         % <- relative change in the primal variable
-    progress  = options.termin.progress;    % <- display "progress" (every k iterations)
-    silence   = options.termin.silence;     % <- display termination condition
-
-    %=====================================================================%
-    % Matrix K for inversion lemma 
-    % (optionally precomputed...saves time during gridsearch)
-    % (only use inversion lemma when p > n...else solve matrix inverse directly)
-    %=====================================================================%
-    if p > n
-        if isfield(options,'K')
-            K=options.K;
-        else
-            K=tak_admm_inv_lemma(X,1/(rho+gamma));
-        end
-    end
+    K=tak_admm_inv_lemma(X,1/(rho+gamma));
 end
-
-
-
-
-
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
+[n,p]=size(X);
+
 % primal variable
 w =zeros(p,1); 
 v=zeros(p,1);
@@ -79,9 +57,6 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 % precompute terms used throughout admm
 %==========================================================================
 Xty=(X'*y);
-if n >= p
-    XtX = X'*X;
-end
 
 %=========================================================================%
 % keep track of function value
@@ -112,12 +87,8 @@ for k=1:maxiter
     % update first variable block: (w)
     %======================================================================
     % update w
-    if p > n
-        q=(Xty + rho*(v-u));
-        w=q/(rho+gamma) - 1/(rho+gamma)^2*(K*(X*q));
-    else
-        w = (XtX + (rho+gamma)*speye(p))\(Xty + rho*(v-u));
-    end
+    q=(Xty + rho*(v-u));
+    w=q/(rho+gamma) - 1/(rho+gamma)^2*(K*(X*q));
 
     %======================================================================
     % update second variable block: (v)
@@ -144,11 +115,7 @@ for k=1:maxiter
             fprintf('*** Primal var. tolerance reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
         end
         break
-    elseif k==maxiter
-        if ~silence
-            fprintf('*** Max number of iterations reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
-        end
-    end     
+    end    
     
     % needed to compute relative change in primal variable
     w_old=w;

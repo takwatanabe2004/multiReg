@@ -10,3 +10,4 @@ else
 end
 %| http://www.mathworks.com/support/solutions/en/data/1-16FLM/?solution=1-16FLM
 title(inputname(1),'Interpreter','none')
+drawnow

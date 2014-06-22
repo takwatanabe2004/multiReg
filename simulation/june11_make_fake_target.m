@@ -7,7 +7,7 @@
 clear
 purge
 
-grid='Grid326'; % {'Grid326','Grid1068','WashU'}
+GRID='Grid326'; % {'Grid326','Grid1068','WashU'}
 
 %% configs
 snr = 0;
@@ -17,16 +17,16 @@ rand('state',seedPoints.rand)
 randn('state',seedPoints.randn)
 
 outPath = [fileparts(mfilename('fullpath')),...
-    '/fake_target_',grid,'_snr',num2str(snr),'.mat']
+    '/fake_target_',GRID,'_snr',num2str(snr),'.mat']
 outVars={'y','wtrue','snr','seedPoints','mFileName','timeStamp'};
 % return
 %%
-load([get_rootdir,'/data_local/designMatrix_FC_',grid,'.mat'],'X')
+load([get_rootdir,'/data_local/designMatrix_FC_',GRID,'.mat'],'X')
 
 %-------------------------------------------------------------------------%
 % get yeo info
 %-------------------------------------------------------------------------%
-load([get_rootdir,'/data_local/yeoLabelInfo/yeo_info_',grid,'_dilated5mm.mat'],...
+load([get_rootdir,'/data_local/yeoLabelInfo/yeo_info_',GRID,'_dilated5mm.mat'],...
     'roiLabel','yeoLabels')
 
 [n,p]=size(X);
@@ -60,7 +60,7 @@ d=length(roiLabel);
 %=========================================================================%
 % impacted networks 
 % netList = [6 1; 4 3; 7 7; 7 4; 5 5];
-netList = [6 1; ];
+netList = [6 1; 4 3; 7 4; 7 7];
 
 nLabel = length(yeoLabels);
 roiLabel_srt = roiLabel(idxsrt);
