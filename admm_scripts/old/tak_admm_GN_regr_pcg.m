@@ -1,27 +1,35 @@
-function [w,output]=tak_GN_regre_FISTA(X,y,lam,gam,options,C,wtrue)
-% [w,output]=tak_GN_regre_FISTA(X,y,lam,gam,options,C,wtrue)
+function [w,output]=tak_admm_GN_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
+% [w,output]=tak_admm_GN_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
 % (06/18/2014)
 %=========================================================================%
-% - ISTA GraphNet regression:
+% - ADMM fused lasso net regression:
 %    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||C*w||^2
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
-p=size(X,2);
+warning('use new function ``tak_GN_regr_ADMM_pcg.m! (06/16/2014) ''''')
+[n,p]=size(X);
+e=size(C,1);
 
 %=========================================================================%
-% ISTA paramter and termination criteria
+% AL paramter and termination criteria
 %=========================================================================%
 if(~exist('options','var')||isempty(options)),     
+    rho = 1;
+    
     maxiter = 500;
     tol = 5e-4;
     progress = inf;
     silence = false;
     funcval = false;
+
+    if p > n
+        K=tak_admm_inv_lemma(X,1/rho);
+    end
 else
-    % step size (needs knowledge of spectral norm of hessian)
-    tau = options.tau;
+    % augmented lagrangian parameters
+    rho=options.rho;
 
     %=====================================================================%
     % termination criterion
@@ -31,13 +39,40 @@ else
     progress  = options.progress;    % <- display "progress" (every k iterations)
     silence   = options.silence;     % <- display termination condition
     funcval   = options.funcval;     % <- track function values (may slow alg.)
+
+    %=====================================================================%
+    % Matrix K for inversion lemma 
+    % (optionally precomputed...saves time during gridsearch)
+    % (only use inversion lemma when p > n...else solve matrix inverse directly)
+    %=====================================================================%
+    if p > n
+        if isfield(options,'K')
+            K=options.K;
+        else
+            K=tak_admm_inv_lemma(X,1/rho);
+        end
+    end
+end
+
+%=========================================================================%
+% conjugate gradient parameters
+%=========================================================================%
+if(~exist('PCG','var')||isempty(PCG))
+    PCG.tol = 1e-8;
+    PCG.maxiter = 500;
 end
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
+% primal variable
 w  = zeros(p,1); 
-v  = zeros(p,1); 
+v1 = zeros(p,1);
+v2 = zeros(p,1);
+
+% dual variables
+u1 = zeros(p,1);
+u2 = zeros(p,1);
 
 %==========================================================================
 % function handles
@@ -48,13 +83,13 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 % precompute terms used throughout admm
 %==========================================================================
 Xty=(X'*y);
-Xt=X';
-CtC=C'*C;
-
-%=========================================================================%
-% gradient function handle
-%=========================================================================%
-GRAD = @(w) Xt*(X*w) - Xty + gam * CtC*w;
+if n >= p
+    XtX = X'*X;
+end
+Ct=C';
+CtC=Ct*C;
+Ip=speye(p);
+PCG.A = gam*CtC+2*Ip;
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
@@ -68,7 +103,6 @@ time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
 w_old=w;
-t=1;
 % disp('go')
 
 % keep track of function value
@@ -85,13 +119,32 @@ for k=1:maxiter
     end
     
     %======================================================================
-    % FISTA step
+    % update first primal variable block: w
     %=====================================================================%
-    w = soft(v - tau*GRAD(v), lam*tau);
-    t_old = t;
-    t = (1+sqrt(1+4*t^2))/2;
-    v = w + ((t_old-1)/t) * (w - w_old);
-%     keyboard
+    % update w (conjugate gradient)
+    b = rho*(v1+v2-u1-u2);
+    [w,~] = pcg(PCG.A, b, PCG.tol, PCG.maxiter, [],[], w);
+%     if mod(k,20)==0, keyboard, end;
+
+    %======================================================================
+    % Update second primal variable block: v=(v1,v2)
+    %======================================================================
+    % update v1
+    v1 = soft(w+u1,lam/rho);    
+    
+    % update v2 (if p > n, apply inversion lemma)
+    q=Xty+w+u2;
+    if p > n
+        v2=q - 1/rho*(K*(X*q));
+    else
+        v2 = rho*((XtX + rho*Ip)\q);
+    end
+    
+    %======================================================================
+    % dual updates
+    %======================================================================
+    u1=u1+(w-v1);
+    u2=u2+(w-v2);
 
     %======================================================================
     % Check termination criteria
@@ -120,6 +173,7 @@ end
 time.total=toc(time.total);
 %% organize output
 % primal variables
+w=v1;
 % output.w=v2;
 % output.v=v;
 

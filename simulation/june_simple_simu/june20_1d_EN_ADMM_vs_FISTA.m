@@ -74,21 +74,21 @@ options_ISTA.tau = 1/(tau1+gam);
 % gnet-ista
 %=========================================================================%
 tic
-[w_EN_IST,out_EN_IST]=tak_EN_regre_ISTA(X,y,lam,gam,options_ISTA,wtrue);
+[w_EN_IST,out_EN_IST]=tak_EN_regr_ISTA(X,y,lam,gam,options_ISTA,wtrue);
 % time_ista=toc
 % return
 %=========================================================================%
 % gnet-fista
 %=========================================================================%
 tic
-[w_EN_FIST,out_EN_FIST]=tak_EN_regre_FISTA(X,y,lam,gam,options_ISTA,wtrue);
+[w_EN_FIST,out_EN_FIST]=tak_EN_regr_FISTA(X,y,lam,gam,options_ISTA,wtrue);
 % time_fista=toc
 % return
 %=========================================================================%
 % gnet-fista: stanford version
 %=========================================================================%
 tic
-[w_EN_FIST_ver2,out_EN_FIST_ver2]=tak_EN_regre_FISTA_stanford(X,y,lam,gam,options_ISTA,wtrue);
+[w_EN_FIST_ver2,out_EN_FIST_ver2]=tak_EN_regr_FISTA_stanford(X,y,lam,gam,options_ISTA,wtrue);
 % time_fista_ver2=toc
 %% compare
 figure,imexp

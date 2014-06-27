@@ -1,28 +1,34 @@
-function [w,output]=tak_EN_regre_FISTA_stanford(X,y,lam,gam,options,wtrue)
-% [w,output]=tak_EN_regre_FISTA_stanford(X,y,lam,gam,options,wtrue)
-% (06/20/2014)
-% - the acceleration technique in Stanford2-0213 slide 12-22.
+function [W,output]=tak_GN_regr_STL_ADMM_pcg(X,Y,lam,gam,options,C,PCG,wtrue)
+% [W,output]=tak_GN_regr_STL_ADMM_pcg(X,Y,lam,gam,options,C,PCG,wtrue)
+% (06/22/2014)
 %=========================================================================%
-% - ISTA Elastic-Net regression:
-%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||w||^2
+% - ADMM fused lasso net regression:
+%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||C*w||^2
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
-p=size(X,2);
+[n,p]=size(X);
+q=size(Y,2);
 
 %=========================================================================%
-% ISTA paramter and termination criteria
+% AL paramter and termination criteria
 %=========================================================================%
 if(~exist('options','var')||isempty(options)),     
+    rho = 1;
+    
     maxiter = 500;
     tol = 5e-4;
     progress = inf;
     silence = false;
     funcval = false;
+
+    if p > n
+        K=tak_admm_inv_lemma(X,1/rho);
+    end
 else
-    % step size (needs knowledge of spectral norm of hessian)
-    tau = options.tau;
+    % augmented lagrangian parameters
+    rho=options.rho;
 
     %=====================================================================%
     % termination criterion
@@ -32,50 +38,78 @@ else
     progress  = options.progress;    % <- display "progress" (every k iterations)
     silence   = options.silence;     % <- display termination condition
     funcval   = options.funcval;     % <- track function values (may slow alg.)
+
+    %=====================================================================%
+    % Matrix K for inversion lemma 
+    % (optionally precomputed...saves time during gridsearch)
+    % (only use inversion lemma when p > n...else solve matrix inverse directly)
+    %=====================================================================%
+    if p > n
+        if isfield(options,'K')
+            K=options.K;
+        else
+            K=tak_admm_inv_lemma(X,1/rho);
+        end
+    end
+end
+
+%=========================================================================%
+% conjugate gradient parameters
+%=========================================================================%
+if(~exist('PCG','var')||isempty(PCG))
+    PCG.tol = 1e-8;
+    PCG.maxiter = 500;
 end
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
-w  = zeros(p,1); 
-% v  = zeros(p,1); 
+% primal variable
+W  = zeros(p,q); 
+V1 = zeros(p,q);
+V2 = zeros(p,q);
+
+% dual variables
+U1 = zeros(p,q);
+U2 = zeros(p,q);
 
 %==========================================================================
 % function handles
 %==========================================================================
 soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
+% vsoft=@(W,tau) tsoftvec(W,tau); % soft-thresholder
 
 %==========================================================================
 % precompute terms used throughout admm
 %==========================================================================
-Xty=(X'*y);
-Xt=X';
-
-%=========================================================================%
-% gradient function handle
-%=========================================================================%
-GRAD = @(w) Xt*(X*w) - Xty + gam*w;
+XtY=(X'*Y);
+if n >= p
+    XtX = X'*X;
+end
+Ct=C';
+CtC=Ct*C;
+Ip=speye(p);
+PCG.A = gam*CtC+2*Ip;
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
 %=========================================================================%
-if funcval
-    fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam/2*norm(w)^2;
-end
+vec = @(W)W(:);
+fval = @(W) 1/2 * norm(Y-X*W)^2 + lam*norm(W(:),1) + gam/2*norm( vec(C*W) )^2;
 %% begin admm iteration
 time.total=tic;
 time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
-w_old=w;
+W_old=W;
 % disp('go')
 
 % keep track of function value
 if funcval, fvalues=zeros(maxiter,1); end;
 if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    if funcval,  fvalues(k)=fval(w); end;   
-    if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
+    if funcval,  fvalues(k)=fval(V1); end;   
+    if exist('wtrue','var'), wdist(k)=norm(V1(:)-wtrue(:)); end;
     
     if mod(k,progress)==0 && k~=1
         str='--- %3d out of %d ... Tol=%2.2e (tinner=%4.3fsec, ttotal=%4.3fsec) ---\n';
@@ -84,17 +118,41 @@ for k=1:maxiter
     end
     
     %======================================================================
-    % FISTA step
+    % update first primal variable block: w
     %=====================================================================%
-    v = w + (k/(k+3))*(w-w_old);
-    w_old = w;
-    w = soft(v - tau*GRAD(v), lam*tau);
+    % update W (conjugate gradient on each columns)
+    B = rho*(V1+V2-U1-U2);
+    for jj=1:q
+        [W(:,jj),~] = pcg(PCG.A, B(:,jj), PCG.tol, PCG.maxiter, [],[], W(:,jj));
+    end
+%     if mod(k,20)==0, keyboard, end;
+
+    %======================================================================
+    % Update second primal variable block: v=(v1,v2)
+    %======================================================================
+    % update v1
+    V1 = soft(W+U1,lam/rho);    
+    
+    % update v2 (if p > n, apply inversion lemma)
+    Q=XtY+rho*(W+U2);
+    if p > n
+%         V2=Q/rho - 1/rho^2*(K*(X*Q));
+        V2=Q/rho - 1/rho^2*(K*(X*Q));
+    else
+        V2 = (XtX + rho*Ip)\Q;
+    end
+    
+    %======================================================================
+    % dual updates
+    %======================================================================
+    U1=U1+(W-V1);
+    U2=U2+(W-V2);
 
     %======================================================================
     % Check termination criteria
     %======================================================================
     %%% relative change in primal variable norm %%%
-    rel_change=norm(w-w_old)/norm(w_old);
+    rel_change=norm(W(:)-W_old(:))/norm(W_old(:));
     rel_changevec(k)=rel_change;
     time.rel_change=tic;
     
@@ -109,11 +167,15 @@ for k=1:maxiter
             fprintf('*** Max number of iterations reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
         end
     end     
+    
+    % needed to compute relative change in primal variable
+    W_old=W;
 end
 
 time.total=toc(time.total);
 %% organize output
 % primal variables
+W=V1;
 % output.w=v2;
 % output.v=v;
 
@@ -134,14 +196,14 @@ output.rel_changevec=rel_changevec(1:k);
 
 % (optional) final function value
 if funcval,  
-    fvalues(k+1)=fval(w); 
+    fvalues(k+1)=fval(V1); 
     fvalues=fvalues(1:k+1);
     output.fval=fvalues;
 end;
 
 % (optional) distance to wtrue
 if exist('wtrue','var')
-    wdist(k+1)=norm(w-wtrue); % <- final function value
+    wdist(k+1)=norm(V1(:)-wtrue(:)); % <- final function value
     wdist=wdist(1:k+1);
     output.wdist=wdist;
 end;

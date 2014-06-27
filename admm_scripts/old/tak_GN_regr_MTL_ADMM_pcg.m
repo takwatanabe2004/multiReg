@@ -1,15 +1,15 @@
-function [w,output]=tak_admm_FL_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
-% [w,output]=tak_admm_FL_regr_pcg(X,y,lam,gam,options,C,PCG,wtrue)
-% (06/16/2014)
+function [W,output]=tak_GN_regr_MTL_ADMM_pcg(X,Y,lam,gam,options,C,PCG,wtrue)
+% [W,output]=tak_GN_regr_MTL_ADMM_pcg(X,Y,lam,gam,options,C,PCG,wtrue)
+% (06/22/2014)
 %=========================================================================%
 % - ADMM fused lasso net regression:
-%    1/2||y-Xw||^2 + lam * ||w||_1 + gamma2 * ||C*w||_1
+%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||C*w||^2
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %% sort out 'options'
 [n,p]=size(X);
-e=size(C,1);
+q=size(Y,2);
 
 %=========================================================================%
 % AL paramter and termination criteria
@@ -65,53 +65,51 @@ end
 % initialize variables
 %==========================================================================
 % primal variable
-w  = zeros(p,1); 
-v1 = zeros(p,1);
-v2 = zeros(p,1);
-v3 = zeros(e,1);
+W  = zeros(p,q); 
+V1 = zeros(p,q);
+V2 = zeros(p,q);
 
 % dual variables
-u1 = zeros(p,1);
-u2 = zeros(p,1);
-u3 = zeros(e,1);
+U1 = zeros(p,q);
+U2 = zeros(p,q);
 
 %==========================================================================
 % function handles
 %==========================================================================
-soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
+% soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
+vsoft=@(W,tau) tsoftvec(W,tau); % soft-thresholder
 
 %==========================================================================
 % precompute terms used throughout admm
 %==========================================================================
-Xty=(X'*y);
+XtY=(X'*Y);
 if n >= p
     XtX = X'*X;
 end
 Ct=C';
 CtC=Ct*C;
 Ip=speye(p);
-PCG.A = CtC+2*Ip;
+PCG.A = gam*CtC+2*Ip;
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
 %=========================================================================%
-if funcval
-    fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam*norm(C*w,1);
-end
+vec = @(W)W(:);
+fval = @(W) 1/2 * norm(Y-X*W)^2 + lam*norm(W(:),1) + gam/2*norm( vec(C*W) )^2;
 %% begin admm iteration
 time.total=tic;
 time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
-w_old=w;
+W_old=W;
 % disp('go')
 
 % keep track of function value
 if funcval, fvalues=zeros(maxiter,1); end;
 if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    if funcval,  fvalues(k)=fval(w); end;   
-    if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
+    if funcval,  fvalues(k)=fval(V1); end;   
+    if exist('wtrue','var'), wdist(k)=norm(V1(:)-wtrue(:)); end;
     
     if mod(k,progress)==0 && k~=1
         str='--- %3d out of %d ... Tol=%2.2e (tinner=%4.3fsec, ttotal=%4.3fsec) ---\n';
@@ -119,42 +117,42 @@ for k=1:maxiter
         time.inner = tic;
     end
     
-    
-    % update w (conjugate gradient)
-    b = (v1+v2-u1-u2) + Ct*(v3-u3);
-    [w,~] = pcg(PCG.A, b, PCG.tol, PCG.maxiter, [],[], w);
+    %======================================================================
+    % update first primal variable block: w
+    %=====================================================================%
+    % update W (conjugate gradient on each columns)
+    B = rho*(V1+V2-U1-U2);
+    for jj=1:q
+        [W(:,jj),~] = pcg(PCG.A, B(:,jj), PCG.tol, PCG.maxiter, [],[], W(:,jj));
+    end
 %     if mod(k,20)==0, keyboard, end;
 
     %======================================================================
-    % Update primal variables
+    % Update second primal variable block: v=(v1,v2)
     %======================================================================
-    % update v1 (if p > n, apply inversion lemma)
-    q=Xty + rho*(w+u1);
+    % update v1
+    V1 = vsoft(W+U1,lam/rho);    
+    
+    % update v2 (if p > n, apply inversion lemma)
+    Q=XtY+rho*(W+U2);
     if p > n
-        v1=q/rho - 1/rho^2*(K*(X*q));
+%         V2=Q/rho - 1/rho^2*(K*(X*Q));
+        V2=Q/rho - 1/rho^2*(K*(X*Q));
     else
-        v1 = (XtX + rho*Ip)\q;
+        V2 = (XtX + rho*Ip)\Q;
     end
-    
-    % update v2
-    v2 = soft(w+u2,lam/rho);
-    
-    % update v3
-    v3 = soft(C*w+u3,gam/rho);
-
     
     %======================================================================
     % dual updates
     %======================================================================
-    u1=u1+(w-v1);
-    u2=u2+(w-v2);
-    u3=u3+(C*w-v3);
+    U1=U1+(W-V1);
+    U2=U2+(W-V2);
 
     %======================================================================
     % Check termination criteria
     %======================================================================
     %%% relative change in primal variable norm %%%
-    rel_change=norm(w-w_old)/norm(w_old);
+    rel_change=norm(W(:)-W_old(:))/norm(W_old(:));
     rel_changevec(k)=rel_change;
     time.rel_change=tic;
     
@@ -171,13 +169,13 @@ for k=1:maxiter
     end     
     
     % needed to compute relative change in primal variable
-    w_old=w;
+    W_old=W;
 end
 
 time.total=toc(time.total);
 %% organize output
 % primal variables
-w=v2;
+W=V1;
 % output.w=v2;
 % output.v=v;
 
@@ -198,14 +196,14 @@ output.rel_changevec=rel_changevec(1:k);
 
 % (optional) final function value
 if funcval,  
-    fvalues(k+1)=fval(w); 
+    fvalues(k+1)=fval(V1); 
     fvalues=fvalues(1:k+1);
     output.fval=fvalues;
 end;
 
 % (optional) distance to wtrue
 if exist('wtrue','var')
-    wdist(k+1)=norm(w-wtrue); % <- final function value
+    wdist(k+1)=norm(V1(:)-wtrue(:)); % <- final function value
     wdist=wdist(1:k+1);
     output.wdist=wdist;
 end;

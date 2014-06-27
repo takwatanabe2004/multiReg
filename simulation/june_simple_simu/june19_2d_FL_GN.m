@@ -67,7 +67,7 @@ tau1=svds(X,1)^2;
 % [tau2,~,flag]=eigs(C'*C,1);
 tau2 = 8; % i know this upper-bound 
 options_FBS.tau = 1/(tau1+gam3*tau2);
-[w_GN,out_GN]=tak_GN_regre_FISTA(X,y,lam3,gam3,options_FBS,C,wtrue(:));
+[w_GN,out_GN]=tak_GN_regr_FISTA(X,y,lam3,gam3,options_FBS,C,wtrue(:));
 
 figure,imexp
 subplot(241),tplot(log10(out_GN.fval(2:end))), title('log10(function value)')

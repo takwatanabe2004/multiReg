@@ -1,9 +1,9 @@
-function [w,output]=tak_EN_regre_ISTA(X,y,lam,gam,options,wtrue)
-% [w,output]=tak_EN_regre_ISTA(X,y,lam,gam,options,wtrue)
+function [w,output]=tak_EN_regr_FISTA(X,y,lam,gam,options,wtrue)
+% [w,output]=tak_EN_regre_FISTA(X,y,lam,gam,options,wtrue)
 % (06/20/2014)
 %=========================================================================%
 % - ISTA Elastic-Net regression:
-%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||*w||^2
+%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||w||^2
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
@@ -13,7 +13,7 @@ p=size(X,2);
 %=========================================================================%
 % ISTA paramter and termination criteria
 %=========================================================================%
-if(~exist('options','var')||isempty(options)),        
+if(~exist('options','var')||isempty(options)),     
     maxiter = 500;
     tol = 5e-4;
     progress = inf;
@@ -37,6 +37,7 @@ end
 % initialize variables
 %==========================================================================
 w  = zeros(p,1); 
+v  = zeros(p,1); 
 
 %==========================================================================
 % function handles
@@ -52,7 +53,7 @@ Xt=X';
 %=========================================================================%
 % gradient function handle
 %=========================================================================%
-GRAD = @(w) Xt*(X*w) - Xty + gam*w;
+GRAD = @(w) Xt*(X*w) - Xty + gam * w;
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
@@ -66,6 +67,7 @@ time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
 w_old=w;
+t=1;
 % disp('go')
 
 % keep track of function value
@@ -82,9 +84,12 @@ for k=1:maxiter
     end
     
     %======================================================================
-    % FBS-step
+    % FISTA step
     %=====================================================================%
-    w = soft(w - tau*GRAD(w), lam*tau);
+    w = soft(v - tau*GRAD(v), lam*tau);
+    t_old = t;
+    t = (1+sqrt(1+4*t^2))/2;
+    v = w + ((t_old-1)/t) * (w - w_old);
 %     keyboard
 
     %======================================================================

@@ -6,7 +6,7 @@ if strcmpi(host,'takanori.eecs.umich.edu')
     offy=90;
     tak_imset2(gcf,1921,2.7*offy + (900-offy)/2,1440,(860-offy)/2.15) % hp2760p
 elseif strcmpi(host,'takanori-PC')
-    set(gcf,'Units','pixels','Position', [1 570 1920 432])
+    set(gcf,'Units','pixels','Position', [1 550 1920 432])
 else
     set(gcf,'Units','pixels','Position', [1 600 1920 432])
 end

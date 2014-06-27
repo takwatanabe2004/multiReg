@@ -17,6 +17,7 @@ end
 %| http://www.mathworks.com/support/solutions/en/data/1-16FLM/?solution=1-16FLM
 title(inputname(1),'Interpreter','none')
 axis('on','image');
-colorbar
+% colorbar
+colorbar('location','southoutside')
 impixelinfo
 drawnow

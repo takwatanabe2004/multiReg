@@ -28,10 +28,10 @@ ntest=500;
 Xtest=randn(ntest,p);
 ytest=Xtest*wtrue;
 
-% tplot(y)
-% tplot(X*wtrue)
-% tplott(wtrue)
-% return
+tplot(y)
+tplot(X*wtrue)
+tplott(wtrue)
+return
 %% set options for admm
 options.rho=1;
 options.maxiter = 500;   % <- maximum number of iterations
