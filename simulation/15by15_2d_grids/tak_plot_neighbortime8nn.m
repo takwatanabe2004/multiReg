@@ -15,8 +15,9 @@ plot(squeeze(SIGNAL(x-1,y-1,:)),'y','linewidth',4)
 plot(squeeze(SIGNAL(x+1,y-1,:)),'c','linewidth',4)
 plot(squeeze(SIGNAL(x-1,y+1,:)),'color',[0.4,0,0.3],'linewidth',4)
 plot(squeeze(SIGNAL(x+1,y+1,:)),'color',.7*[1,1,1],'linewidth',4)
-legend('CENTER','x-1','x+1','y-1','y+1',...
-                'x-1,y-1','x+1,y-1','x-1,y+1','x+1,y+1')
+H=legend('CENTER','x-1','x+1','y-1','y+1',...
+                'x-1,y-1','x+1,y-1','x-1,y+1','x+1,y+1');
+set(H,'fontsize',22,'fontweight','b','location','north')
 grid on
 grid on
 xlim([1,size(SIGNAL,3)]);

@@ -1,4 +1,4 @@
-function DISTR = tak_prec_connectome2d(T, rtime, NSIZE, rspace)
+function DISTR = tak_prec_connectome2d(T,NSIZE, rtime,rspace)
 % DISTR = tak_prec_connectome2d(T, rtime, NSIZE, rspace)
 %----------------------------------------------------------------------------------
 % Assign the inverse covariance matrix for a "vectorized" version of the 

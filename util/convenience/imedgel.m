@@ -17,7 +17,8 @@ if zeroDiag == true
 end
 
 imagesc(adjMat~=0)
-axis('off','image')
+% axis('off','image')
+axis('image')
 colormap(flipud(gray))
 
 [nnz_lower, sp_level] = tak_nnz_lower(im);

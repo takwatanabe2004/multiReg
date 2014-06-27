@@ -1,2 +1,2 @@
 function tspyy(A)
-figure,imexp,spy(A)
+figure,imexp,spy(A),drawnow
