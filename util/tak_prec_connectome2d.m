@@ -64,3 +64,10 @@ DISTR.AR2D.N=NSIZE(1)*NSIZE(2); % array-size
 %==================================================================================
 DISTR.ICOV=kron(DISTR.AR2D.ICOV,DISTR.AR1D.ICOV);
 DISTR.A=kron(DISTR.AR2D.A,DISTR.AR1D.A);
+
+%-------------------------------------------------------------------------%
+% New: (06/27/2014)
+%-------------------------------------------------------------------------%
+DISTR.T = prod(T); % number of time points
+DISTR.X = NSIZE(1);
+DISTR.Y = NSIZE(2);
