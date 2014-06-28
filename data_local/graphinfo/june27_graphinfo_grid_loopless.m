@@ -20,9 +20,13 @@ timeTotal
 
 dd=prod(coord.NSIZE); % #nodes in full FOV (includes "ghost" nodes)
 
-C6d=tak_diffmat_6d( [coord.NSIZE, coord.NSIZE],0);
-Lap6d=C6d'*C6d;
-adj6d = inc2adj(C6d);
+%-------------------------------------------------------------------------%
+% C6d=tak_diffmat_6d( [coord.NSIZE, coord.NSIZE],0);
+% Lap6d=C6d'*C6d;
+% adj6d = tak_inc2adj(C6d);
+%-------------------------------------------------------------------------%
+adj6d = tak_adjmat([coord.NSIZE, coord.NSIZE]);
+
 % figure,imexpb
 % subplot(131),tspy(C6d)
 % subplot(132),tspy(Lap6d)
@@ -41,7 +45,6 @@ adj6d = inc2adj(C6d);
 % sample adjmat indices cooresponding to the above mask
 %-------------------------------------------------------------------------%
 adjmat_subsamp = adj6d(coord.slex,coord.slex);
-adjmat_subsamp = adjmat_subsamp + adjmat_subsamp'; % symmetrie
 C6d_subsamp = tak_adjmat2incmat(adjmat_subsamp);
 Lap6d_subsamp=C6d_subsamp'*C6d_subsamp;
 % figure,imexpb

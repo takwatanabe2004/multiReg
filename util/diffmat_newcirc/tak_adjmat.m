@@ -1,8 +1,8 @@
-function C = tak_diffmat(ARRAYSIZE,flagcirc)
-% C = tak_diffmat(ARRAYSIZE,flagcirc)
-% (05/28/2014)
+function A = tak_adjmat(ARRAYSIZE,flagcirc)
+% A = tak_adjmat(ARRAYSIZE,flagcirc)
+% (06/28/2014)
 %--------------------------------------------------------------------------
-% A wrapper for making difference matrix for n-d tensor signal
+% A wrapper for making adjacency matrix for n-d tensor signal
 % - the circulant matrix has the "wrap-around-effect" occuring on the 
 %   first row (the previous version had this on the last row).
 % (default: non-circulant case)
@@ -14,15 +14,15 @@ end
 
 switch length(ARRAYSIZE)
     case 1
-        C=tak_diffmat_1d(ARRAYSIZE,flagcirc);
+        A=tak_adjmat_1d(ARRAYSIZE,flagcirc);
     case 2
-        C=tak_diffmat_2d(ARRAYSIZE,flagcirc);
+        A=tak_adjmat_2d(ARRAYSIZE,flagcirc);
     case 3
-        C=tak_diffmat_3d(ARRAYSIZE,flagcirc);
+        A=tak_adjmat_3d(ARRAYSIZE,flagcirc);
     case 4
-        C=tak_diffmat_4d(ARRAYSIZE,flagcirc);
+        A=tak_adjmat_4d(ARRAYSIZE,flagcirc);
     case 6
-        C=tak_diffmat_6d(ARRAYSIZE,flagcirc);
+        A=tak_adjmat_6d(ARRAYSIZE,flagcirc);
     otherwise
         error('Unsupported dimension!!!')
 end

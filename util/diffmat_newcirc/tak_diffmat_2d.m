@@ -1,10 +1,10 @@
 function [C,CX,CY]=tak_diffmat_2d(ARRAYSIZE,flagcirc)
 % [C,CX,CY]=tak_diffmat_2d(ARRAYSIZE,flagcirc
 %----------------------------------------------------------------------------------
-% Create 2-d first order difference matrix
+% Create 2-d first order finite difference matrix
 %----------------------------------------------------------------------------------
 % INPUT
-%   ARRAYSIZE = [X Y Z] -> dimension size of the array
+%   ARRAYSIZE = [X Y] -> dimension size of the array
 %   flagcirc: '0' -> make non-circulant difference matrix [default]
 %             '1' -> make circulant difference matrix 
 %                    (creates wrap-around terms, so use with caution)
