@@ -1,0 +1,27 @@
+Daniel Kessler
+Apr 29 (6 days ago)
+
+to SLAB, Takanori, Yu 
+Hi Tak,
+
+There is structural MRI data available for Schiz_COBRE. I'm putting the rest of slab on this email in case there are processing issues with the Schiz_COBRE VBM data that I'm not aware of.
+
+Here's an example path (you can of course replace 0040096 to find other subject's data)
+
+/net/data4/Schiz_COBRE/Subjects/0040096/session_1/rest_1/coReg/
+
+There are two files in this folder you will probably want to use.
+
+m0wrp1mprage.nii
+m0 - bias corrected (this corrects for differences in inter-subject brain volume)
+wrp - warped
+1 - tissue type (1 - Gray, 2 - White, 3 - Cerebrospinal Fluid)
+mprage - image type
+
+and possibly
+m0wrp2mprage.nii
+which is the white matter volume map. 
+
+There is also m0wrp3mprage.nii which is cerebrospinal fluid, but we generally don't look at those.
+
+-Daniel
