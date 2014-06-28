@@ -18,11 +18,12 @@ dataVars={'adjmat', 'C', 'coord', 'roiMNI', 'roiMNI_flipx','timeTotal'};
 load(dataPath,dataVars{:})
 
 timeTotal
+ARRAYSIZE=[coord.NSIZE, coord.NSIZE];
 
 %=========================================================================%
 % loopless construction of the differencing matrix
 %=========================================================================%
-adjmat_subsamp = tak_adjmat_subsampled([coord.NSIZE, coord.NSIZE],coord.slex);
+adjmat_subsamp = tak_adjmat_subsampled(ARRAYSIZE,coord.slex);
 C6d_subsamp = tak_adjmat2incmat(adjmat_subsamp);
 Lap6d_subsamp=C6d_subsamp'*C6d_subsamp;
 
@@ -39,3 +40,9 @@ Lap6d_brute=C6d_brute'*C6d_brute;
 isequal(C6d_brute,C6d_subsamp)
 isequal(adjmat,adjmat_subsamp)
 isequal(Lap6d_brute,Lap6d_subsamp)
+
+%-------------------------------------------------------------------------%
+% sanity check: check if my function work when coordinate is given in 
+% non-lexicographic coordinates
+%-------------------------------------------------------------------------%
+isequal(adjmat_subsamp, tak_adjmat_subsampled(ARRAYSIZE,coord.s))
