@@ -59,7 +59,7 @@ end
 % - bcirc: masks the "wrap-around effect" from the circulant difference matrix
 %-------------------------------------------------------------------------%
 bcirc=diag(tak_circmask(ARRAYSIZE));
-b=bsupp.*bcirc;
+b=logical(bsupp.*bcirc);
 
 %-------------------------------------------------------------------------%
 % approach below creates a diagonal matrix...which is memory inefficient...,

@@ -41,10 +41,10 @@ idx_anom = [idx_anom1, idx_anom2];
 figure,imexpl,tak_plot_sim_nodes2d(nx,ny,idx_anom)
 % return
 %% time series parameters
-T  = 200;       % number of time points
-rt = 0.0;       % temporal correlation
-rx = 0.9;      % spatial correlation (x)
-ry = 0.5;      % spatial correlation (y)
+T  = 2000;       % number of time points
+rt = 0.99;       % temporal correlation
+rx = 0.8;      % spatial correlation (x)
+ry = 0.9;      % spatial correlation (y)
 nsamp=10;
 
 % % create precision matrix (2d) from the (vectorized) matrix normal distribution
@@ -61,8 +61,9 @@ Whos Z
 tak_plot_neighbortime(Z(:,:,:,1),8,8)
 % tak_plot_neighbortime8nn(Z(:,:,:,1),8,8)
 
-imcovvl( tak_dvecinv( X(:,1),1))
-% imcovvl( tak_dvecinv( mean(X'),1))
+imcovvl( tak_dvecinv( X(1,:),1))
+imcovvl( tak_dvecinv( mean(X),1))
+return
 %% display complete bipartite graph of the above two clusters in "connectome space"
 mask=false(d,d);
 for ii=1:length(idx_anom1)
@@ -75,7 +76,7 @@ for ii=1:length(idx_anom1)
 end
 imedger(mask)
 %%
-[idx,maskVec,maskMat]= tak_nodes2edges_2d(nx,ny,idx_anom1,idx_anom2);
+[idx,maskVec,maskMat]= tak_nodes2edges_2clusters(nx,ny,idx_anom1,idx_anom2);
 figure,imexpb
 subplot(131),tplot(idx)
 subplot(132),tplot(maskVec)

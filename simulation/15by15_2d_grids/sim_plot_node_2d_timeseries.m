@@ -32,5 +32,5 @@ Whos Z
 tak_plot_neighbortime(Z(:,:,:,1),8,8)
 % tak_plot_neighbortime8nn(Z(:,:,:,1),8,8)
 
-imcovvl( tak_dvecinv( X(:,1),1))
-imcovvl( tak_dvecinv( mean(X'),1))
+imcovvl( tak_dvecinv( X(1,:),1))
+imcovvl( tak_dvecinv( mean(X),1))

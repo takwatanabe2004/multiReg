@@ -1,5 +1,5 @@
-function [idx,maskVec,maskMat] = tak_nodes2edges_2d(nx,ny,idx_cluster1,idx_cluster2)
-% [idx,maskVec,maskMat] = tak_nodes2edges_2d(nx,ny,idx_cluster1,idx_cluster2)
+function [idx,maskVec,maskMat] = tak_nodes2edges_2clusters(nx,ny,idx_cluster1,idx_cluster2)
+% [idx,maskVec,maskMat] = tak_nodes2edges_2clusters(nx,ny,idx_cluster1,idx_cluster2)
 %=========================================================================%
 % - map indices of nodes to edge indices, where we assume that we're given
 %   the node locations in lexicographic-coordinates of 2 clusters...

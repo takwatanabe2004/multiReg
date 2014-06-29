@@ -1,6 +1,9 @@
-%% june26_4d_weightVector
-% (06/26/2014)
+%% june29_4d_weightVector_FLpcg_vs_FLfft.m
+% (06/29/2014)
 %=========================================================================%
+% Same as june26_4d_weightVector.m, but compare FL algorithm of PCG-ADMM 
+% and FFT-ADMM with data augmentation
+%-------------------------------------------------------------------------%
 % - Create 4-D structure on the "ground truth weight vector"
 % - same structure as the simulation setup in our neuroimage paper, but
 %   using a 11 x 11 grid structure as in our initial simulation setup
@@ -10,7 +13,8 @@ clear all;
 purge
 
 nx = 11;
-ny = 11;
+ny = 13;
+NSIZE=[nx,ny,nx,ny];
 
 d = nx*ny; % number of nodes
 p = nchoosek(d,2); % number of correlations/edges
@@ -21,8 +25,8 @@ p = nchoosek(d,2); % number of correlations/edges
 %-------------------------------------------------------------------------%
 idx_samp = tak_dvec(reshape(1:d^2,[d,d]));
 
-% 4d adjacency matrix
-adjmat = tak_adjmat_subsampled([nx,ny,nx,ny],idx_samp);
+% 4d difference matrix matrix
+adjmat = tak_adjmat_subsampled(NSIZE,idx_samp);
 C = tak_adjmat2incmat(adjmat);
 % L = C'*C;
 % figure,imexpb
@@ -30,6 +34,20 @@ C = tak_adjmat2incmat(adjmat);
 % subplot(132),tspy(C)
 % subplot(133),tspy(L)
 % return
+
+%=========================================================================%
+% circulant 4-d difference matrix (for FFT-FL)
+%=========================================================================%
+Ccirc = tak_diffmat([nx,ny,nx,ny],1);
+[A,b]=tak_get_augMat_maskMat(NSIZE,idx_samp);
+
+%-------------------------------------------------------------------------%
+% inputs for FL-FFT-ADMM algorithm
+%-------------------------------------------------------------------------%
+graphInfo.C = Ccirc;
+graphInfo.A = A;
+graphInfo.b = b;
+graphInfo.NSIZE = NSIZE;
 %% assign pair of node clusters
 %-------------------------------------------------------------------------%
 % two clusters of nodes
@@ -55,7 +73,7 @@ idx_anom2 = sub2ind([nx,ny],xx2(:),yy2(:))';
 
 idx_anom = [idx_anom1, idx_anom2];
 
-figure,imexpr,tak_plot_sim_nodes2d(nx,ny,idx_anom)
+% figure,imexpr,tak_plot_sim_nodes2d(nx,ny,idx_anom)
 % return
 
 %% get indices of node cluster pairs
@@ -74,25 +92,13 @@ wtrue(idx_mask) = 2 + .2*randn(size(idx_mask));
 wtrue=wtrue/15;
 % imconnl(wtrue)
 %% sample data
-sig = 0;
+sig = 1;
 n=500;
-% X = randn(n,p);
-
-%-------------------------------------------------------------------------%
-% connectome from 1D x 2D ar model
-%-------------------------------------------------------------------------%
-AR.T  = 200;       % number of time points
-AR.rt = 0.0;       % temporal correlation
-AR.rx = 0.9;      % spatial correlation (x)
-AR.ry = 0.5;      % spatial correlation (y)
-AR.rspace = [AR.rx, AR.ry];
-AR.NSIZE = [nx,ny,nx,ny];
-X = tak_sample_connectome2d_batch(n, AR.T, AR.NSIZE, AR.rt, AR.rspace);
+X = randn(n,p);
 y = X*wtrue(:) + sig*randn(n,1);
 
 ntest=200;
-% Xtest = randn(ntest,p);
-Xtest = tak_sample_connectome2d_batch(ntest, AR.T, AR.NSIZE, AR.rt, AR.rspace);
+Xtest = randn(ntest,p);
 ytest = Xtest*wtrue(:);
 % tplott(y)
 %% set options
@@ -104,66 +110,58 @@ options.funcval = false;    % <- track function values (may slow alg.)
 
 % ADMM parameter
 options.rho=2;
-
-% Lipschitz constant for FISTA step-size
-tau_X = tnormest(X)^2;
-tau_C = tnormest(C'*C);
-options.tau = 1/(tau_X+tau_C); % stepsize for GN-FISTA
 %% run estimation algorithm
-%-------------------------------------------------------------------------%
-% ridge regression
-%-------------------------------------------------------------------------%
-w_RR = tak_ridge_regression(X,y,.5);
-Ypred.RR = Xtest*w_RR;
-MSE.RR =  norm(ytest(:) - Ypred.RR(:));
-CORR.RR = corr(ytest(:),  Ypred.RR(:));
-% purge
-%-------------------------------------------------------------------------%
-% enet
-%-------------------------------------------------------------------------%
-lam1 = 1;  % L1 penalty weight
-gam1 = 1; % fused lasso penalty weight
-
-[w_EN, output_EN]=tak_EN_regr_ADMM(X,y,lam1,gam1,options,wtrue(:));
-Ypred.EN = Xtest*w_EN;
-MSE.EN =  norm(ytest(:) - Ypred.EN(:));
-CORR.EN = corr(ytest(:),  Ypred.EN(:));
-%%
-%-------------------------------------------------------------------------%
-% GN-FISTA
-%-------------------------------------------------------------------------%
-lam_GN = 1;
-gam_GN = 20;
-[w_GN, output_GN]=tak_GN_regr_FISTA(X,y,lam_GN,gam_GN,options,C,wtrue(:));
-Ypred.GN = Xtest*w_GN;
-MSE.GN =  norm(ytest(:) - Ypred.GN(:));
-CORR.GN = corr(ytest(:),  Ypred.GN(:));
 %%
 %-------------------------------------------------------------------------%
 % FL-ADMM (PCG)
 %-------------------------------------------------------------------------%
 lam_FL = 0.1;
 gam_FL = 0.1;
-[w_FL, output_FL]=tak_FL_regr_ADMM_PCG(X,y,lam_FL,gam_FL,options,C,[],wtrue(:));
-% tplottl(output_FL.wdist)
-Ypred.FL = Xtest*w_FL;
-MSE.FL =  norm(ytest(:) - Ypred.FL(:));
-CORR.FL = corr(ytest(:),  Ypred.FL(:));
+[w.FL_PCG, output.FL_PCG]=tak_FL_regr_ADMM_PCG(X,y,lam_FL,gam_FL,options,C,[],wtrue(:));
+tak_sim_plot_alg_result(output.FL_PCG)
+
+Ypred.FL_PCG = Xtest*w.FL_PCG;
+MSE.FL_PCG =  norm(ytest(:) - Ypred.FL_PCG(:));
+CORR.FL_PCG = corr(ytest(:),  Ypred.FL_PCG(:));
+% return
 %%
+%-------------------------------------------------------------------------%
+% FL-ADMM (FFT)
+%-------------------------------------------------------------------------%
+[w.FL_FFT, output.FL_FFT,]=tak_FL_regr_ADMM_FFT(X,y,lam_FL,gam_FL,options,graphInfo,wtrue(:));
+tak_sim_plot_alg_result(output.FL_FFT)
+%% view results
+figure,imexpb
+subplot(131),imconn(wtrue),title('wtrue'), CAXIS=caxis;colorbar
+subplot(132),imconn(w.FL_PCG),mytitle('west'),caxis(CAXIS),colorbar
+subplot(133),imconn(abs(wtrue-w.FL_PCG)),title('|wtrue-west|'),caxis(CAXIS),colorbar
+drawnow
+
+figure,imexpb
+subplot(131),imconn(wtrue),title('wtrue'), CAXIS=caxis;colorbar
+subplot(132),imconn(w.FL_FFT),mytitle('west'),caxis(CAXIS),colorbar
+subplot(133),imconn(abs(wtrue-w.FL_FFT)),title('|wtrue-west|'),caxis(CAXIS),colorbar
+drawnow
+
+Ypred.FL_FFT = Xtest*w.FL_FFT;
+MSE.FL_FFT =  norm(ytest(:) - Ypred.FL_FFT(:));
+CORR.FL_FFT = corr(ytest(:),  Ypred.FL_FFT(:));
+
+% purge
 % figure,imexpb
 % subplot(131),imconn(wtrue),CAXIS=caxis;
 % subplot(132),imconn(w_RR),caxis(CAXIS)
 % subplot(133),imconn(w_EN),caxis(CAXIS)
 
-figure,imexp
-subplot(231),imconn(wtrue),CAXIS=caxis;colorbar off
-subplot(232),imconn(w_GN),caxis(CAXIS);colorbar off
-subplot(233),imconn(w_FL),caxis(CAXIS);colorbar off
+figure,imexpb
+subplot(131),imconn(w.FL_PCG),CAXIS=caxis,title('PCG')
+subplot(132),imconn(w.FL_FFT),caxis(CAXIS),title('FFT')
+subplot(133),imconn(abs(w.FL_FFT-w.FL_PCG))
 
 %-------------------------------------------------------------------------%
 % prediction accuracy
 MSE
 CORR
-% figure,imexp
-subplot(234),tstem2(ytest,Ypred.GN)
-subplot(235),tstem2(ytest,Ypred.FL)
+figure,imexpb
+subplot(121),tstem2(ytest,Ypred.FL_PCG)
+subplot(122),tstem(abs(Ypred.FL_FFT-Ypred.FL_PCG))
