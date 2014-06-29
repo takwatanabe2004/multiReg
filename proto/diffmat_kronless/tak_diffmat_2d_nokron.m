@@ -3,7 +3,6 @@ function [C,Cx,Cy]=tak_diffmat_2d_nokron(NSIZE,flagcirc)
 if nargin==1 
     flagcirc=0;
 end
-% NDIM = length(NSIZE);
 p = prod(NSIZE);
 
 %% circulant case
@@ -18,7 +17,6 @@ if flagcirc
         % last term is the "wrap-around" part
         idx_row = [idx_row, offset+2:offset+NSIZE(1),   offset+1  ];
         idx_col = [idx_col, offset+1:offset+NSIZE(1)-1, offset+NSIZE(1) ];
-%             keyboard
     end
     Cx = speye(p) - sparse(idx_row, idx_col, 1, p,p);
 
@@ -29,7 +27,6 @@ if flagcirc
     idx_row = [1+NSIZE(1):p,  1:NSIZE(1)]; 
     idx_col = [1:p-NSIZE(1),  p-NSIZE(1)+1:p  ]; 
     Cy = speye(p) - sparse(idx_row, idx_col, 1, p,p);
-
 %% noncirculant case
 else 
     %=================================================================%
@@ -42,7 +39,6 @@ else
         offset_col = (i-1)*(NSIZE(1));
         idx_row = [idx_row, offset_row+1:offset_row+NSIZE(1)-1];
         idx_col = [idx_col, offset_col+1:offset_col+NSIZE(1)-1];
-%             keyboard
     end
     nrowx = (NSIZE(1)-1) *  NSIZE(2);    
     Cx =  sparse(idx_row, 1+idx_col,  1, nrowx, p) ...
