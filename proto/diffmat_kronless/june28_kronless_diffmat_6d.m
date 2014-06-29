@@ -7,7 +7,7 @@
 clear all;
 purge
 %% 2d trial
-NSIZE=repmat([7,5,6]*2,[1,2]);
+NSIZE=repmat([7,8,11]*1,[1,2]);
 % NSIZE=[4,3,2,4,3,2];
 p=prod(NSIZE)
 
