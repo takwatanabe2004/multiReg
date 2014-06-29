@@ -56,4 +56,6 @@ else
     Cy =  sparse(idx, idx+NSIZE(1), 1, nrowy, p) ...
         - sparse(idx, idx,          1, nrowy, p);
 end
-C = [Cx; Cy];
+% C = [Cx; Cy];
+% vertcat faster
+C=vertcat(Cx,Cy);
