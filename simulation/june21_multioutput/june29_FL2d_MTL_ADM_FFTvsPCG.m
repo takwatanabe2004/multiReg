@@ -164,12 +164,12 @@ if isfield(W, 'FL_STL_FFT')
     MSE.FL_STL_FFT = norm(Ytest(:) - Ypred.FL_STL_FFT(:));
     CORR.FL_STL_FFT=corr(Ytest(:), Ypred.FL_STL_FFT(:));
     figure,imexp
-    subplot(431),tplot(log10(out.GN_STL.fval(1:end))), title('log10(function value)')
-    subplot(432),tplot(log10(out.GN_STL.wdist)), title('log10(||wtrue-west||)')
-    subplot(433),tplot(log10(out.GN_STL.rel_changevec)), title('log10(wnew-wold)')
+%     subplot(431),tplot(log10(out.FL_STL_FFT.fval(1:end))), title('log10(function value)')
+    subplot(432),tplot(log10(out.FL_STL_FFT.wdist)), title('log10(||wtrue-west||)')
+    subplot(433),tplot(log10(out.FL_STL_FFT.rel_changevec)), title('log10(wnew-wold)')
     subplot(434),imagesc(Wtrue),title('Wtrue'), CAXIS=caxis;colorbar
     subplot(435),imagesc(W.FL_STL_FFT),mytitle('FL_STL_FFT'),caxis(CAXIS),colorbar
-    subplot(436),imagesc(abs(Wtrue-W.GN_STL)),title('|wtrue-west|'),caxis(CAXIS),colorbar
+    subplot(436),imagesc(abs(Wtrue-W.FL_STL_FFT)),title('|wtrue-west|'),caxis(CAXIS),colorbar
     
     subplot(437),imagesc(reshape(Wtrue(:,1),[nx,ny])),title('Wtrue1'), CAXIS1=caxis;colorbar
     subplot(438),imagesc(reshape(Wtrue(:,2),[nx,ny])),title('Wtrue2'), CAXIS2=caxis;colorbar
@@ -186,7 +186,7 @@ if isfield(W, 'FL_MTL_FFT')
     MSE.FL_MTL_FFT = norm(Ytest(:) - Ypred.FL_MTL_FFT(:));
     CORR.FL_MTL_FFT=corr(Ytest(:), Ypred.FL_MTL_FFT(:));
     figure,imexp
-    subplot(431),tplot(log10(out.FL_MTL_FFT.fval(1:end))), title('log10(function value)')
+%     subplot(431),tplot(log10(out.FL_MTL_FFT.fval(1:end))), title('log10(function value)')
     subplot(432),tplot(log10(out.FL_MTL_FFT.wdist)), title('log10(||wtrue-west||)')
     subplot(433),tplot(log10(out.FL_MTL_FFT.rel_changevec)), title('log10(wnew-wold)')
     subplot(434),imagesc(Wtrue),title('Wtrue'), CAXIS=caxis;colorbar
@@ -208,7 +208,7 @@ if isfield(W, 'FL_STL')
     MSE.FL_STL = norm(Ytest(:) - Ypred.FL_STL(:));
     CORR.FL_STL=corr(Ytest(:), Ypred.FL_STL(:));
     figure,imexp
-    subplot(431),tplot(log10(out.FL_STL.fval(1:end))), title('log10(function value)')
+%     subplot(431),tplot(log10(out.FL_STL.fval(1:end))), title('log10(function value)')
     subplot(432),tplot(log10(out.FL_STL.wdist)), title('log10(||wtrue-west||)')
     subplot(433),tplot(log10(out.FL_STL.rel_changevec)), title('log10(wnew-wold)')
     subplot(434),imagesc(Wtrue),title('Wtrue'), CAXIS=caxis;colorbar
@@ -230,7 +230,7 @@ if isfield(W, 'FL_MTL')
     MSE.FL_MTL = norm(Ytest(:) - Ypred.FL_MTL(:));
     CORR.FL_MTL=corr(Ytest(:), Ypred.FL_MTL(:));
     figure,imexp
-    subplot(431),tplot(log10(out.FL_MTL.fval(1:end))), title('log10(function value)')
+%     subplot(431),tplot(log10(out.FL_MTL.fval(1:end))), title('log10(function value)')
     subplot(432),tplot(log10(out.FL_MTL.wdist)), title('log10(||wtrue-west||)')
     subplot(433),tplot(log10(out.FL_MTL.rel_changevec)), title('log10(wnew-wold)')
     subplot(434),imagesc(Wtrue),title('Wtrue'), CAXIS=caxis;colorbar
@@ -252,7 +252,7 @@ if isfield(W, 'EN_STL')
     MSE.EN_STL = norm(Ytest(:) - Ypred.EN_STL(:));
     CORR.EN_STL=corr(Ytest(:), Ypred.EN_STL(:));
     figure,imexp
-    subplot(431),tplot(log10(out.EN_STL.fval(1:end))), title('log10(function value)')
+%     subplot(431),tplot(log10(out.EN_STL.fval(1:end))), title('log10(function value)')
     subplot(432),tplot(log10(out.EN_STL.wdist)), title('log10(||wtrue-west||)')
     subplot(433),tplot(log10(out.EN_STL.rel_changevec)), title('log10(wnew-wold)')
     subplot(434),imagesc(Wtrue),title('Wtrue'), CAXIS=caxis;colorbar
@@ -274,7 +274,7 @@ if isfield(W, 'EN_MTL')
     MSE.EN_MTL = norm(Ytest(:) - Ypred.EN_MTL(:));
     CORR.EN_MTL=corr(Ytest(:), Ypred.EN_MTL(:));
     figure,imexp
-    subplot(431),tplot(log10(out.EN_MTL.fval(1:end))), title('log10(function value)')
+%     subplot(431),tplot(log10(out.EN_MTL.fval(1:end))), title('log10(function value)')
     subplot(432),tplot(log10(out.EN_MTL.wdist)), title('log10(||wtrue-west||)')
     subplot(433),tplot(log10(out.EN_MTL.rel_changevec)), title('log10(wnew-wold)')
     subplot(434),imagesc(Wtrue),title('Wtrue'), CAXIS=caxis;colorbar
