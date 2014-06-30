@@ -9,9 +9,19 @@ function [A,b]=tak_get_augMat_maskMat(ARRAYSIZE,coord)
 % - coord = index location of the subsampled coordinates
 %         (nsamp x 1) if given in lexicographic index
 %         (nsamp x NDIM) if given in (X,Y,Z...) coordinate index
+%-------------------------------------------------------------------------%
+% DEFAULT for "coord"
+% - assume all coordinates are given....thus A = IDENTITY, and b only masks
+%   the circulant wrap-around artifacts
 %=========================================================================%
 % (06/28/2014)
 %% parse inputs
+if nargin==1 
+    % default: assume all coordinates are given (thus no augmentation needed)
+    coord=1:prod(ARRAYSIZE);
+    coord=coord(:);
+end
+
 % d_subsamp = # subsampled coordinate points
 d_subsamp=size(coord,1);
 

@@ -39,7 +39,11 @@ else
     progress  = options.progress;    % <- display "progress" (every k iterations)
     silence   = options.silence;     % <- display termination condition
     funcval   = options.funcval;     % <- track function values (may slow alg.)
-    MTL       = options.MTL;          % <- use L1/L2 penalty?
+    if isfield(options,'MTL')
+        MTL   = options.MTL;          % <- use L1/L2 penalty? (default: true)
+    else
+        MTL = true;
+    end
     
     %=====================================================================%
     % Matrix K for inversion lemma 
