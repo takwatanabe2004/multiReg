@@ -9,7 +9,7 @@
 clear
 purge
 
-GRID = 'Grid1068'; % {'Grid326','Grid1068','WashU'}
+GRID = 'Grid326'; % {'Grid326','Grid1068','WashU'}
 % nodeIdx = 115:117;
 
 idx_start=305;
