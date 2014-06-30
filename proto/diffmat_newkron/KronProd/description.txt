@@ -1,0 +1,97 @@
+This is a class for efficiently representing and manipulating N-fold Kronecker products of matrices (or of objects that behave like matrices) in terms of their operands only. 
+  
+Given matrices {A,B,C,D,...} and a scalar s, an object M of this class can be used to represent 
+  
+    Matrix = s * A kron B kron C kron D kron ... (Eq. 1) 
+  
+where "A kron B" denotes kron(A,B), the Kronecker product of A and B. Internally, however, M stores the operands {s,A,B,C,D,...} separately, which is typically far more byte-compact than numerically expanding out the RHS of Eq. 1. 
+  
+Furthermore, many mathematical manipulations of Kronecker products are more efficient when done in terms of {s,A,B,C,D,...} separately than when done with the explicit numerical form of M as a matrix. The class overloads a number of methods and math operators in a way that exploits the Kronecker product structure accordingly. 
+  
+Among these methods/operators are: mtimes (*), times (.*) , tranpose (.') , ctranpose (') , rdivide (./), ldivide (.\), mldivide (\), mrdivide (/), inv, pinv, power, mpower, norm, sum, cond, eig, svd, abs, nnz, orth, chol, lu, qr, full, sparse, ... 
+  
+Some restrictions apply to these overloads. In particular, bi-operand math operations involving two KronProd objects, e.g. M1*M2, typically require the operands of each KronProd to be of compatible sizes. However, I find these restrictions to be satisfied often in applications.
+
+Consult "help KronProd/methodname" for more info on each method. Optionally also, read krontest.m for demonstrations of their use. 
+  
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ EXAMPLE #1: 
+  
+ A primary application of this class is to efficiently perform separable tensorial operations, i.e., where a linear transform is applied to all columns of an array, then all rows, and so on. 
+  
+The following example is of a separable transformation of a 3D array X that transforms all of its columns via multiplication with a non-square matrix A, then transforms all rows by multiplication with B, then finally transforms all 3rd-dimensional axes by multiplication with C. Two approaches to this are compared. The first approach uses kron(). The second uses the KronProd class. Other operations are also shown for illustration purposes. 
+  
+Notice the orders of magnitude reduction both in CPU time and in memory consumption, using the KronProd object. 
+  
+   
+      %DATA 
+      m=25; n=15; p=40; 
+      mm=16; nn=n; pp=10; 
+      A=rand(mm,m); B=pi*eye(n); C=rand(pp,p); 
+      s=4; % a scalar 
+      X=rand(m,n,p);    
+   
+      %METHOD I: based on kron() 
+      tic; 
+   
+         Matrix = s*kron(C,kron(B,A)); 
+   
+         y1 = Matrix*X(:); %The tensorial transformation 
+             y1=reshape(y1,[mm,nn,pp]); 
+   
+         z1 = Matrix.'*y1(:); 
+   
+         w1 = Matrix.'\z1; 
+  
+      toc; 
+      %Elapsed time is 78.729007 seconds. 
+   
+   
+      %METHOD II: based on KronProd object 
+      tic; 
+   
+         Object = KronProd({A,pi,C},[1 2 3],[m,n,p],s); %equivalent to Matrix above 
+   
+           y2 = Object*X; 
+                  % This operation could also have been implemented 
+                  % as y2=reshape( Object*X(:) , [mm,nn,pp]); 
+                     
+           z2 = Object.'*y1; 
+   
+           w2 = Object.'\z1; 
+   
+      toc 
+      % Elapsed time is 0.003958 seconds. 
+   
+   
+  
+   
+      %%%ERROR ANALYSIS 
+      PercentError=@(x,y) norm(x(:)-y(:),2)/norm(x(:),'inf')*100; 
+   
+          PercentError(y1,y2), % = 3.0393e-012 
+   
+          PercentError(size(y1),size(y2)), % = 0 
+   
+          PercentError(z1,z2), % = 1.3017e-012 
+          PercentError(w1,w2), % = 4.3409e-011 
+   
+   
+  
+      %%%MEMORY FOOTPRINT 
+   
+     >> whos Matrix Object 
+   
+   
+             Name Size Bytes Class Attributes 
+        
+             Matrix 2400x15000 288000000 double 
+             Object 2400x15000 8102 KronProd 
+  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+EXAMPLE #2: As a more practical example, the KronProd class is very useful in conjunction with the following tool for signal interpolation/reconstruction:
+
+http://www.mathworks.com/matlabcentral/fileexchange/26292-regular-control-point-interpolation-matrix-with-boundary-conditions
+
+An example involving 2D signal reconstruction using cubic B-splines is provided in the file Example2D.m at the above link.
