@@ -14,11 +14,24 @@
 clear
 purge
 
-fsavefig=false;
-
-rootdir = fileparts(mfilename('fullpath'));
 GRID='Grid326'; % {'Grid326','Grid1068','WashU'}
 
+rootdir = fileparts(mfilename('fullpath'));
+
+%-------------------------------------------------------------------------%
+% save figure?
+%-------------------------------------------------------------------------%
+fsavefig=false; %  {'true','false'}
+figname = [rootdir,'/anomNodeCluster2','_',GRID];
+
+%-------------------------------------------------------------------------%
+% save weight vector support?
+%-------------------------------------------------------------------------%
+fsaveSupport=true; %  {'true','false'} % save weight vector support?
+outPath = [rootdir,'/anomNodeCluster2','_',GRID];
+outVars = {'wsupp', 'idx_anomNodeClusters', 'timeStamp','mFileName'};
+% return
+%%
 % dataPath1=[get_rootdir,'/data_local/designMatrix_FC_',GRID,'.mat'];
 % dataVars1={'SubjList'}; % {'X','sex','age'}
 % load(dataPath1,dataVars1{:})
@@ -43,7 +56,11 @@ nz=coord.nz;
 d = size(roiMNI,1); % # of nodes
 p = nchoosek(d,2);  % # edges
 
-screenSize=[1 122 1920 855];
+if fsavefig
+    screenSize=[1 52 1920 1035];
+else
+    screenSize=[1 111 1920 888];
+end
 %%
 % figure,imexpl,hist(roiLabel, unique(roiLabel)),
 % [xx,yy]=hist(roiLabel, unique(roiLabel))
@@ -54,37 +71,93 @@ if strcmp(GRID,'Grid1068')
 %     tmp = [9:12, 85:88, 205:206];
 %     idx_anomNodesYeoCluster{13} = [tmp, tmp+ny,tmp+2*ny];
 elseif strcmp(GRID,'Grid326')
+    % cluster: visual (1:violet)
+    tmp = [155:158, 159:163,...
+           93:96,97:101];
+    idx_anomNodeClusters{cnt} = [tmp]; 
+    boxColorList{cnt} = [.5 1, 0.2]*1; % light green
+    cnt=cnt+1;
     
-    % cluster1: visual (1:BLUE)
-%     tmp = [285:286, 291:292, 315:318, 319:322];
-%     idx_anomNodeClusters{cnt} = [tmp]; 
-%     boxColorList{cnt} = [1 0.2, 1]; % light pink
-%     cnt=cnt+1;
+    % cluster: frontoparietal (2:BLUE)
+    tmp = [285:286, 291:292, 315:318, 319:322];
+    idx_anomNodeClusters{cnt} = [tmp]; 
+    boxColorList{cnt} = [1 0.2, 1]; % light pink
+    cnt=cnt+1;
 
-    % cluster2: DA (3:GREEN)
+    % cluster: DA (3:GREEN)
     tmp = [311:314, 273:276, 278:281];
     idx_anomNodeClusters{cnt} = [tmp]; 
     boxColorList{cnt} = 'c';
     cnt=cnt+1;
 %     
-    % cluster3: frotoparietal (6: ORANGE) & default (7: RED)
+    % cluster: frotoparietal (6: ORANGE) & default (7: RED)
     tmp = [153:154,213:214,...
            148:151,209:212,269:272,...
-           143:144,205:206,265:266,307:310];
+           143:144,205:206,265:266,308:309];
     idx_anomNodeClusters{cnt} = [tmp]; 
     boxColorList{cnt} = 'k';
     cnt=cnt+1;
 % 
-    % cluster4: cerebellum (12:GRAY)
+    % cluster: cerebellum (12:GRAY)
     tmp = [5:9, 40:42, 11:15, 47:49];
     idx_anomNodeClusters{cnt} = [tmp]; 
     boxColorList{cnt} = 'y';
     cnt=cnt+1;
 end
-Kcluster = length(idx_anomNodeClusters);
+K = length(idx_anomNodeClusters);
+%% number of edges in a complete K-partite graph?
+for k=1:K
+    numNodesList(k) = length(idx_anomNodeClusters{k});
+end
 
+nEdges = 0;
+for i=1:K-1
+    for j=i+1:K
+        nEdges = nEdges + numNodesList(i)*numNodesList(j);
+    end
+end
+nEdges
+nEdges/p
 
+%% visualize impacted edges in connectome space
+% purge
+Wsupp = zeros(d,d);
+for i=1:K-1
+    for j=i+1:K
+%         disp('-----------')
+%         idx_anomNodeClusters{i}
+%         idx_anomNodeClusters{j}
+        Wsupp(idx_anomNodeClusters{i},idx_anomNodeClusters{j})=1;
+        Wsupp(idx_anomNodeClusters{j},idx_anomNodeClusters{i})=1;
+    end
+end
+imedger(Wsupp)
+if fsavefig,savefig([figname,'_edgemat'],'png'),end;
+
+%=========================================================================%
+% display in sorted coordinate
+%=========================================================================%
+% circularly shift 1 indices (so "unlabeled" is at the final label index)
+roiLabel_circshift=roiLabel-1;
+roiLabel_circshift(roiLabel_circshift==-1)=12;
+yeoLabels_circshift=circshift(yeoLabels,-1);
+[idxsrt,labelCount_circshift] = tak_get_yeo_sort(roiLabel_circshift);
+
+textOption1={'fontweight','b','fontsize',9};
+lineOption = {'color','k','linewidth',0.5};
+
+Wsupp_srt = Wsupp(idxsrt,idxsrt);
+imedger(Wsupp_srt),axis off
+tak_local_linegroups5(gcf,labelCount_circshift,textOption1,yeoLabels_circshift,lineOption)
+if fsavefig,savefig([figname,'_edgemat_sorted'],'png'),end;
 % return
+
+if fsaveSupport
+    timeStamp=tak_timestamp;
+    mFileName=mfilename;
+    wsupp = tak_dvec(Wsupp);
+    save(outPath,outVars{:})
+end
 %%
 figure,set(gcf,'Units','pixels','Position', screenSize)
 
@@ -98,8 +171,8 @@ for x=1:coord.nx
     % find if there are anom node cluster members in this slice
     % - keep this in an (K x 1) cell
     %=====================================================================%
-    idx_anomNodeSlice=cell(Kcluster,1);
-    for icluster=1:Kcluster
+    idx_anomNodeSlice=cell(K,1);
+    for icluster=1:K
         tmp1=idx_anomNodeClusters{icluster};
         tmp2=idx_xslice';
         idx_anomNodeSlice{icluster}=tmp1(ismember(tmp1,tmp2));
@@ -108,15 +181,13 @@ for x=1:coord.nx
     if strcmpi(GRID,'Grid1068')
         H=subplot(3,4,x);
     else
-        H=subplot(2,4,x);
+        H=subplot(3,3,x);
     end
     tak_plot_sim_nodes2d_subplots_anomNodeClusters_yeo(H,ny,nz,xslice,idx_xslice,...
         roiLabel,yeoColors,idx_anomNodeSlice,boxColorList,1)
 end
 % return
-if fsavefig
-    savefig([rootdir,'/MNI_node_coverage_',GRID,'_saggital'],'png')
-end
+if fsavefig,savefig([figname,'_saggital'],'png'),end;
 
 %=========================================================================%
 % (x,z) coronal plane
@@ -129,8 +200,8 @@ for y=1:coord.ny
     % find if there are anom node cluster members in this slice
     % - keep this in an (K x 1) cell
     %=====================================================================%
-    idx_anomNodeSlice=cell(Kcluster,1);
-    for icluster=1:Kcluster
+    idx_anomNodeSlice=cell(K,1);
+    for icluster=1:K
         tmp1=idx_anomNodeClusters{icluster};
         tmp2=idx_yslice';
         idx_anomNodeSlice{icluster}=tmp1(ismember(tmp1,tmp2));
@@ -138,15 +209,13 @@ for y=1:coord.ny
     if strcmpi(GRID,'Grid1068')
         H=subplot(3,5,y);
     else
-        H=subplot(2,5,y);
+        H=subplot(3,4,y);
     end
     tak_plot_sim_nodes2d_subplots_anomNodeClusters_yeo(H,nx,nz,yslice,idx_yslice,...
         roiLabel,yeoColors,idx_anomNodeSlice,boxColorList,1)
 end
 % return
-if fsavefig
-    savefig([rootdir,'/MNI_node_coverage_',GRID,'_coronal'],'png')
-end
+if fsavefig,savefig([figname,'_coronal'],'png'),end;
 
 %=========================================================================%
 % (x,y) axial plane
@@ -159,8 +228,8 @@ for z=1:coord.nz
     % find if there are anom node cluster members in this slice
     % - keep this in an (K x 1) cell
     %=====================================================================%
-    idx_anomNodeSlice=cell(Kcluster,1);
-    for icluster=1:Kcluster
+    idx_anomNodeSlice=cell(K,1);
+    for icluster=1:K
         tmp1=idx_anomNodeClusters{icluster};
         tmp2=idx_zslice';
         idx_anomNodeSlice{icluster}=tmp1(ismember(tmp1,tmp2));
@@ -173,6 +242,5 @@ for z=1:coord.nz
     tak_plot_sim_nodes2d_subplots_anomNodeClusters_yeo(H,nx,ny,zslice,idx_zslice,...
         roiLabel,yeoColors,idx_anomNodeSlice,boxColorList,1)
 end
-if fsavefig
-    savefig([rootdir,'/MNI_node_coverage_',GRID,'_axial'],'png')
-end
+
+if fsavefig,savefig([figname,'_axial'],'png'),end;

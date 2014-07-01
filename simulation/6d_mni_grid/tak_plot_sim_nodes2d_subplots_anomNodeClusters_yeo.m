@@ -58,7 +58,7 @@ colorBack=[0.85 1 0.85]*.9;
 
 axesOption={'XTick',[1,round(nx/2),nx],'YTick',[1,round(ny/2),ny],...
     'linewidth',lwidth,'Fontweight','b',...
-    'fontsize',fsize,'TickLength',[0 0],'xaxislocation','bottom'};
+    'fontsize',fsize*.8,'TickLength',[0 0],'xaxislocation','bottom'};
 
 % color_blue = [0.8 0.8 1];
 % color_red = [1, 0.8 0.8];
@@ -89,6 +89,8 @@ if ~exist('flagCoord','var')
     flagCoord=0;
 end
 
+fsize_xyLabel = fsize*0.8;
+
 boxMarkerOption={'s','MarkerSize',msize*1.2,'linewidth',mwidth*1.77};
 % boxMarkerOption={'^','MarkerSize',msize*1.0,'linewidth',mwidth*1.2};
 if ~exist('boxColorList','var')
@@ -106,16 +108,16 @@ for i=1:size(crd_slice,1)
 %         str=['(',num2str(ix),',',num2str(iy),')'];
 %         text(ix,iy,str,textOption{:},'fontsize',msize/2.5)
     text(ix,iy,num2str(idx_slice(i)),textOption{:})
-    switch flagCoord
+    switch flagCoord        
         case 1
-            xlabel('y','fontsize',fsize*1.2,'fontweight','b')
-            ylabel('z','fontsize',fsize*1.2,'fontweight','b')
+            xlabel('y','fontsize',fsize_xyLabel,'fontweight','b')
+            ylabel('z','fontsize',fsize_xyLabel,'fontweight','b')
         case 2
-            xlabel('x','fontsize',fsize*1.2,'fontweight','b')
-            ylabel('z','fontsize',fsize*1.2,'fontweight','b')
+            xlabel('x','fontsize',fsize_xyLabel,'fontweight','b')
+            ylabel('z','fontsize',fsize_xyLabel,'fontweight','b')
         case 3
-            xlabel('x','fontsize',fsize*1.2,'fontweight','b')
-            ylabel('y','fontsize',fsize*1.2,'fontweight','b')
+            xlabel('x','fontsize',fsize_xyLabel,'fontweight','b')
+            ylabel('y','fontsize',fsize_xyLabel,'fontweight','b')
     end
 %     keyboard
     %%

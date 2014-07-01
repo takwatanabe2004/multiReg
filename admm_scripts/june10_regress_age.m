@@ -57,14 +57,14 @@ options.fval = true; % <- keep track of function values (may slow down algorithm
 %-------------------------------------------------------------------------%
 options.sigma=1; % CPPD parameter (sigma*tau L^2 < 1 must be satisfied)
 F = [options.lambda*speye(p);options.gamma*C];
-% tic
+tic
 % options.L=svds(F,1)
 options.L=sqrt(eigs(F'*F,1));
 % toc
 options.tau=1/(options.L^2 * options.sigma)
 options.tau = options.tau - options.tau/100; % <- safeguard (sig*tau*L^2 < 1...strict equality)
 toc
-return
+% return
 
 
 tic

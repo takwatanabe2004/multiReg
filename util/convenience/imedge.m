@@ -25,8 +25,8 @@ imagesc(adjMat~=0)
 axis('image') 
 colormap(flipud(gray))
 
-[nnz_upper, sp_level] = tak_nnz_lower(im);
-titleStr = sprintf('%g nonzeroes (%g%% sparsity level)', nnz_upper,sp_level*100);
+[nnz_lower, sp_level] = tak_nnz_lower(im);
+titleStr = sprintf('%g nonzeroes (%g%% sparsity level)', nnz_lower,sp_level*100);
 title([inputname(1), ' --- ', titleStr],'Interpreter','none')
 drawnow
 % impixelinfo
