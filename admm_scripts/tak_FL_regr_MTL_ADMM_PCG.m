@@ -63,7 +63,7 @@ end
 % conjugate gradient parameters
 %=========================================================================%
 if(~exist('PCG','var')||isempty(PCG))
-    PCG.tol = 1e-8;
+    PCG.tol = 1e-6;
     PCG.maxiter = 500;
 end
 %% initialize variables, function handles, and terms used through admm steps

@@ -192,14 +192,16 @@ CORR.RR = corr(Ytest(:),  Ypred.RR(:));
 %=========================================================================%
 % enet-stl
 options.MTL=false;
-[w.EN_STL, output.EN_STL]=tak_EN_regr_MTL_ADMM(X,Y,lam_EN,gam_EN,options,Wtrue(:));
+disp('--- EN-STL ---')
+[w.EN_STL, output.EN_STL]=tak_EN_regr_MTL_ADMM(X,Y,lam_EN,gam_EN,options,Wtrue);
 Ypred.EN_STL = Xtest*w.EN_STL;
 MSE.EN_STL =  norm(Ytest(:) - Ypred.EN_STL(:));
 CORR.EN_STL = corr(Ytest(:),  Ypred.EN_STL(:));
 
 % enet-mtl
+disp('--- EN-MTL ---')
 options.MTL=true;
-[w.EN_MTL, output.EN_MTL]=tak_EN_regr_MTL_ADMM(X,Y,lam_EN,gam_EN,options,Wtrue(:));
+[w.EN_MTL, output.EN_MTL]=tak_EN_regr_MTL_ADMM(X,Y,lam_EN,gam_EN,options,Wtrue);
 Ypred.EN_MTL = Xtest*w.EN_MTL;
 MSE.EN_MTL =  norm(Ytest(:) - Ypred.EN_MTL(:));
 CORR.EN_MTL = corr(Ytest(:),  Ypred.EN_MTL(:));
@@ -208,14 +210,16 @@ CORR.EN_MTL = corr(Ytest(:),  Ypred.EN_MTL(:));
 %=========================================================================%
 % GN-FISTA-STL
 options.MTL=false;
-[w.GN_STL, output.GN_STL]=tak_GN_regr_MTL_FISTA(X,Y,lam_GN,gam_GN,options,C,Wtrue(:));
+disp('--- GN-STL ---')
+[w.GN_STL, output.GN_STL]=tak_GN_regr_MTL_FISTA(X,Y,lam_GN,gam_GN,options,C,Wtrue);
 Ypred.GN_STL = Xtest*w.GN_STL;
 MSE.GN_STL =  norm(Ytest(:) - Ypred.GN_STL(:));
 CORR.GN_STL = corr(Ytest(:),  Ypred.GN_STL(:));
 
 % GN-FISTA-MTL
+disp('--- GN-MTL ---')
 options.MTL=true;
-[w.GN_MTL, output.GN_MTL]=tak_GN_regr_MTL_FISTA(X,Y,lam_GN,gam_GN,options,C,Wtrue(:));
+[w.GN_MTL, output.GN_MTL]=tak_GN_regr_MTL_FISTA(X,Y,lam_GN,gam_GN,options,C,Wtrue);
 Ypred.GN_MTL = Xtest*w.GN_MTL;
 MSE.GN_MTL =  norm(Ytest(:) - Ypred.GN_MTL(:));
 CORR.GN_MTL = corr(Ytest(:),  Ypred.GN_MTL(:));
@@ -224,16 +228,17 @@ CORR.GN_MTL = corr(Ytest(:),  Ypred.GN_MTL(:));
 %=========================================================================%
 % FL-ADMM-STL
 options.MTL=false;
-% [w_FL, output_FL]=tak_FL_regr_MTL_ADMM_PCG(X,Y,lam_FL,gam_FL,options,C,[],Wtrue(:));
-[w.FL_STL, output.FL_STL]=tak_FL_regr_MTL_ADMM_FFT(X,Y,lam_FL,gam_FL,options,graphInfo,Wtrue(:));
+disp('--- FL-STL ---')
+% [w_FL, output_FL]=tak_FL_regr_MTL_ADMM_PCG(X,Y,lam_FL,gam_FL,options,C,[],Wtrue);
+[w.FL_STL, output.FL_STL]=tak_FL_regr_MTL_ADMM_FFT(X,Y,lam_FL,gam_FL,options,graphInfo,Wtrue);
 Ypred.FL_STL = Xtest*w.FL_STL;
 MSE.FL_STL =  norm(Ytest(:) - Ypred.FL_STL(:));
 CORR.FL_STL = corr(Ytest(:),  Ypred.FL_STL(:));
 
-
 % FL-ADMM-MTL
 options.MTL=true;
-[w.FL_MTL, output.FL_MTL]=tak_FL_regr_MTL_ADMM_FFT(X,Y,lam_FL,gam_FL,options,graphInfo,Wtrue(:));
+disp('--- FL-MTL ---')
+[w.FL_MTL, output.FL_MTL]=tak_FL_regr_MTL_ADMM_FFT(X,Y,lam_FL,gam_FL,options,graphInfo,Wtrue);
 Ypred.FL_MTL = Xtest*w.FL_MTL;
 MSE.FL_MTL =  norm(Ytest(:) - Ypred.FL_MTL(:));
 CORR.FL_MTL = corr(Ytest(:),  Ypred.FL_MTL(:));

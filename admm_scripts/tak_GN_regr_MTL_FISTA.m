@@ -119,7 +119,7 @@ for k=1:maxiter
     time.rel_change=tic;
     
     flag1=rel_change<tol;
-    if flag1 && (k>30) % allow 30 iterations of burn-in period
+    if flag1 && (k>80) % allow 30 iterations of burn-in period
         if ~silence
             fprintf('*** Primal var. tolerance reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
         end

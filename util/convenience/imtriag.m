@@ -21,6 +21,8 @@ title([inputname(1), ' --- ', titleStr],'Interpreter','none')
 drawnow
 % impixelinfo
 
-% cbarOption={'fontsize',22','fontweight','b','ytick',[-.66,0,.66],...
+% cbarOption={'fontsize',10','fontweight','b','ytick',[-.66,0,.66],...
 %     'YTickLabel',{' <0',' =0',' >0'},'TickLength',[0 0]};
-% colorbar(cbarOption{:})
+cbarOption={'location','southoutside','fontsize',18','fontweight','b','xtick',[-.66,0,.66],...
+    'xTickLabel',{' <0',' =0',' >0'},'TickLength',[0 0]};
+colorbar(cbarOption{:})

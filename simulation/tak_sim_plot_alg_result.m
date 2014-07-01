@@ -9,7 +9,7 @@ figure,imexpb
 if isfield(output, 'fval')
     subplot(131),tplot(log10(output.fval(2:end))), title('log10(function value)')
 end
-if isfield(output, 'fval')
+if isfield(output, 'wdist')
     subplot(132),tplot(log10(output.wdist)), title('log10(||wtrue-west||)')
 end
 subplot(133),tplot(log10(output.rel_changevec)), title('log10(wnew-wold)')

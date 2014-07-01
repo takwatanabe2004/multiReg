@@ -9,7 +9,7 @@ function [P, A] = tak_prec_ar3d( imdim, smoothness)
 %|      smoothness = [rx,ry,rz]
 %|      rx = smoothness parameter in the x-direction
 %|      ry = smoothness parameter in the y-direction
-%|      ry = smoothness parameter in the z-direction
+%|      rz = smoothness parameter in the z-direction
 %|------------------------------------------------------------------------------|%
 %| Output: 
 %|      P = precision matrix in 'sparse' format.  
