@@ -10,7 +10,7 @@
 %%
 clear
 purge
-warning('had an error with the indexing in the script!  run version2!')
+warning('had an error with the indexing in the script!  run corrected version!')
 rootdir = fileparts(mfilename('fullpath'));
 GRID='Grid1068'; % {'Grid326','Grid1068','WashU'}
 
