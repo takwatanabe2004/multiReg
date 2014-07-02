@@ -10,6 +10,7 @@
 clear
 purge
 
+warning('probaly won''t run unless you checkout the commit on (07/02/2014)')
 GRID='Grid326'; % {'Grid326','Grid1068','WashU'}
 
 rootdir = fileparts(mfilename('fullpath'));

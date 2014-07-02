@@ -9,6 +9,7 @@ function [W,output]=tak_FL_regr_MTL_ADMM_PCG(X,Y,lam,gam,options,C,PCG,wtrue)
 %-------------------------------------------------------------------------%
 % (06/22/2014) - created
 % (07/02/2014) - added preconditioner option field (PCG.precond)
+%                (using ichol as preconditioner can be helpful)
 %% sort out 'options'
 [n,p]=size(X);
 e=size(C,1);
@@ -67,7 +68,7 @@ end
 if(~exist('PCG','var')||isempty(PCG))
     PCG.tol = 1e-6;
     PCG.maxiter = 500;
-    PCG.precond = []; % preconditioner...use nothing as default
+%     PCG.precond = []; % preconditioner...use nothing as default
 end
 if ~isfield(PCG,'precond')
     PCG.precond = [];
@@ -104,11 +105,7 @@ Ct=C';
 CtC=Ct*C;
 Ip=speye(p);
 Iq=speye(q);
-PCG.A = CtC+2*Ip;
-PCG.A = kron(Iq,PCG.A);
-if  ~isempty(PCG.precond)
-    PCG.precond = kron(Iq,PCG.precond);
-end
+
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
 %=========================================================================%
@@ -144,11 +141,10 @@ for k=1:maxiter
     
     % update w (conjugate gradient)
     B = (V1+V2-U1-U2) + Ct*(V3-U3);
-    [W,~] = pcg(PCG.A, B(:), PCG.tol, PCG.maxiter, PCG.precond,PCG.precond', W(:));
     W = reshape(W,[p,q]);
-%     for kk=1:q
-%         [W(:,kk),~] = pcg(PCG.A, B(:,kk), PCG.tol, PCG.maxiter, [],[], W(:,kk));
-%     end
+    for kk=1:q
+        [W(:,kk),~] = pcg(PCG.A, B(:,kk), PCG.tol, PCG.maxiter, [],[], W(:,kk));
+    end
 %     if mod(k,20)==0, keyboard, end;
 
     %======================================================================
