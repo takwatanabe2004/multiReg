@@ -8,6 +8,7 @@ rmpath([rootdir,'/.git'])
 
 %-------------------------------------------------------------------------%
 rmpath([rootdir,'/admm_scripts/admm_scripts_binary_classif/old_connectomes'])
+% rmpath([rootdir,'/admm_scripts/old'])
 rmpath([rootdir,'/simulation/mni_brain_slice/old_stuffs'])
 rmpath([rootdir,'/data_local/_old_stuffs'])
 rmpath([rootdir,'/proto/adjmat_kronless'])

@@ -10,7 +10,7 @@ figure,imexpl
 if nargin == 1
     flag = 0;
 end
-wmat = tak_dvecinv(w,0);
+wmat = tak_dvecinv(w,1);
 imcov(wmat)
 if flag
     tmp=caxis;

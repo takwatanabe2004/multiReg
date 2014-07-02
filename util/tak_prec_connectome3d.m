@@ -59,7 +59,7 @@ DISTR.AR3D.N=prod(NSIZE); % array-size
 %==================================================================================
 % overall inverse covariance of the matrix normal distribution
 %==================================================================================
-DISTR.ICOV=kron(DISTR.AR3D.ICOV,DISTR.AR1D.ICOV);
+% DISTR.ICOV=kron(DISTR.AR3D.ICOV,DISTR.AR1D.ICOV); % <- i never use this....kron here is computationaly expensive so remove
 DISTR.A=kron(DISTR.AR3D.A,DISTR.AR1D.A);
 
 %-------------------------------------------------------------------------%

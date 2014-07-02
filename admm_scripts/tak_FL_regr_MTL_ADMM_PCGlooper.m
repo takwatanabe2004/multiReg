@@ -105,9 +105,9 @@ CtC=Ct*C;
 Ip=speye(p);
 Iq=speye(q);
 PCG.A = CtC+2*Ip;
-PCG.A = kron(Iq,PCG.A);
+PCG_A = kron(Iq,PCG.A);
 if  ~isempty(PCG.precond)
-    PCG.precond = kron(Iq,PCG.precond);
+    PCG_precond = kron(Iq,PCG.precond);
 end
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
@@ -144,11 +144,11 @@ for k=1:maxiter
     
     % update w (conjugate gradient)
     B = (V1+V2-U1-U2) + Ct*(V3-U3);
-    [W,~] = pcg(PCG.A, B(:), PCG.tol, PCG.maxiter, PCG.precond,PCG.precond', W(:));
-    W = reshape(W,[p,q]);
-%     for kk=1:q
-%         [W(:,kk),~] = pcg(PCG.A, B(:,kk), PCG.tol, PCG.maxiter, [],[], W(:,kk));
-%     end
+%     [W] = pcg(PCG_A, B(:), PCG.tol, PCG.maxiter, PCG_precond,PCG_precond', W(:));
+%     W = reshape(W,[p,q]);
+    for kk=1:q
+        [W(:,kk),~] = pcg(PCG.A, B(:,kk), PCG.tol, PCG.maxiter, PCG.precond,PCG.precond', W(:,kk));
+    end
 %     if mod(k,20)==0, keyboard, end;
 
     %======================================================================
