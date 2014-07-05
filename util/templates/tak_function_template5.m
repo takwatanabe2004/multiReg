@@ -35,6 +35,6 @@ disp('This function does nothing..use this as a template to create new functions
 
 % if ~isfield(param, 'tol'), param.tol=10e-4 ; end
 
-% if(~exist('m','var')||isempty(m)), m = [4, 4]; end
-%
+% if ~exist('m','var')||isempty(m), m = [4, 4]; end
+
 % rootdir = fileparts(mfilename('fullpath'));

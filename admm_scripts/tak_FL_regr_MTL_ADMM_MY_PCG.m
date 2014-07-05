@@ -1,5 +1,7 @@
-function [W,output]=tak_FL_regr_MTL_ADMM_PCG(X,Y,lam,gam,options,C,PCG,wtrue)
-% [w,output]=tak_FL_regr_ADMM_PCG(X,y,lam,gam,options,C,PCG,wtrue)
+function [W,output]=tak_FL_regr_MTL_ADMM_MY_PCG(X,Y,lam,gam,options,C,PCG,wtrue)
+% [w,output]=tak_FL_regr_MTL_ADMM_MY_PCG(X,y,lam,gam,options,C,PCG,wtrue)
+%-------------------------------------------------------------------------%
+% same as tak_FL_regr_MTL_ADMM_PCG.m, but use the loopless pcg alg i created.
 %=========================================================================%
 % - ADMM fused lasso net regression:
 %    1/2||y-Xw||^2 + lam * ||w||_1 + gamma2 * ||C*w||_1
@@ -7,9 +9,7 @@ function [W,output]=tak_FL_regr_MTL_ADMM_PCG(X,Y,lam,gam,options,C,PCG,wtrue)
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
 %-------------------------------------------------------------------------%
-% (06/22/2014) - created
-% (07/02/2014) - added preconditioner option field (PCG.precond)
-%                (using ichol as preconditioner can be helpful)
+% (07/04/2014) - created
 %% sort out 'options'
 [n,p]=size(X);
 e=size(C,1);
@@ -68,11 +68,12 @@ end
 if(~exist('PCG','var')||isempty(PCG))
     PCG.tol = 1e-6;
     PCG.maxiter = 500;
-%     PCG.precond = []; % preconditioner...use nothing as default
+    PCG.precond = false; % ichol-based preconditioner...set "off" for default
 end
 if ~isfield(PCG,'precond')
-    PCG.precond = [];
+    PCG.precond = false;
 end
+
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
@@ -105,7 +106,15 @@ Ct=C';
 CtC=Ct*C;
 Ip=speye(p);
 % Iq=speye(q);
+
+%-------------------------------------------------------------------------%
+% pcg stuff
+%-------------------------------------------------------------------------%
 PCG.A = CtC+2*Ip;
+if PCG.precond
+    PCG.L = ichol(PCG.A);
+end
+
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
@@ -140,14 +149,6 @@ for k=1:maxiter
         time.inner = tic;
     end    
     
-    % update w (conjugate gradient)
-    B = (V1+V2-U1-U2) + Ct*(V3-U3);
-    W = reshape(W,[p,q]);
-    for kk=1:q
-        [W(:,kk),~] = pcg(PCG.A, B(:,kk), PCG.tol, PCG.maxiter, [],[], W(:,kk));
-    end
-%     if mod(k,20)==0, keyboard, end;
-
     %======================================================================
     % Update primal variables
     %======================================================================
@@ -169,6 +170,24 @@ for k=1:maxiter
     % update v3
     V3 = soft(C*W+U3,gam/rho);
     
+    %-----------------------------------------------%
+    % update w (conjugate gradient)
+    %-----------------------------------------------%
+    B = (V1+V2-U1-U2) + Ct*(V3-U3);
+%     W = reshape(W,[p,q]);
+%     keyboard
+    if PCG.precond
+        [W,iter] = tak_pcg_matrix(PCG.A, B, PCG.L, PCG.tol, PCG.maxiter,W);
+    else
+        [W,iter] = tak_cg_matrix(PCG.A, B, PCG.tol, PCG.maxiter,W);
+    end
+%     iter
+%     resid
+%     for kk=1:q
+%         [W(:,kk),~] = pcg(PCG.A, B(:,kk), PCG.tol, PCG.maxiter, [],[], W(:,kk));
+%     end
+%     if mod(k,20)==0, keyboard, end;
+
     %======================================================================
     % dual updates
     %======================================================================

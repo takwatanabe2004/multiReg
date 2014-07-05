@@ -15,6 +15,8 @@ rmpath([rootdir,'/proto/adjmat_kronless'])
 rmpath([rootdir,'/proto/diffmat_kronless'])
 rmpath(genpath([rootdir,'/proto/diffmat_newkron']))
 rmpath(genpath([rootdir,'/data_local/_from_other_repos']))
+
+rmpath(genpath([rootdir,'/TMP']))
 %-------------------------------------------------------------------------%
 % - remove directory not of interest (02/27/2014)
 %-------------------------------------------------------------------------%
