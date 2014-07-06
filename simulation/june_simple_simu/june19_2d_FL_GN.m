@@ -16,8 +16,8 @@ wtrue = zeros(nx,nx);
 wtrue(21:40, 61:70) = 1;
 wtrue(54:66, 21:33) = 3;
 wtrue(11:25, 11:25) = 5; 
-% imcovv(wtrue)
-% return
+imcovv(wtrue)
+return
 
 sig = 2;
 X = randn(n,p);
