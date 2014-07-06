@@ -9,6 +9,10 @@ function [w,idx_supp,supp_info,C] = tak_sim_weight_4d_tripartite(nx,ny)
 %=========================================================================%
 % (07/05/2014)
 %%
+if nargin==0
+    nx=11;
+    ny=11;
+end
 d = nx*ny; % number of nodes
 p = nchoosek(d,2); % number of correlations/edges
 
@@ -48,6 +52,8 @@ idx_supp = [supp_info.idx_list{1,1}; ...
         
 supp_info.mask = false(p,1);
 supp_info.mask(idx_supp) = true;
+supp_info.nx=nx;
+supp_info.ny=ny;
 %% assign ground truth weight on the support
 w = zeros(p,1);
 %-------------------------------------------------------------------------%

@@ -1,12 +1,13 @@
-function [w,output]=tak_FL_regr_ADMM_PCG(X,y,lam,gam,options,C,PCG,wtrue)
-% [w,output]=tak_FL_regr_ADMM_PCG(X,y,lam,gam,options,C,PCG,wtrue)
+function [w,output]=tak_FL_regr_LADMM(X,y,lam,gam,options,C,wtrue)
+% [w,output]=tak_FL_regr_LADMM(X,y,lam,gam,options,C,tau,wtrue)
 % (06/16/2014)
 %=========================================================================%
-% - ADMM fused lasso net regression:
+% - Linaerized-ADMM fused lasso net regression:
 %    1/2||y-Xw||^2 + lam * ||w||_1 + gamma2 * ||C*w||_1
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
+% options.tau = LADMM stepsize parameter
 %-------------------------------------------------------------------------%
 % (07/06/2014)- added PCG.precond option
 %% sort out 'options'
@@ -17,7 +18,11 @@ e=size(C,1);
 % AL paramter and termination criteria
 %=========================================================================%
 if(~exist('options','var')||isempty(options)),     
+    % augmented lagrangian parameters
     rho = 1;
+
+    % LADMM stepsize parameter
+    tau = 1/(2+normest(C'*C)^2);
     
     maxiter = 500;
     tol = 4e-3;
@@ -31,6 +36,15 @@ if(~exist('options','var')||isempty(options)),
 else
     % augmented lagrangian parameters
     rho=options.rho;
+
+    % LADMM stepsize parameter
+    if isfield(options,'tau')
+        tau = options.tau;
+    else
+        tau = 1/(2+normest(C'*C)^2);
+        % svds(A,1)^2
+        % eigs(A'*A,1);
+    end
 
     %=====================================================================%
     % termination criterion
@@ -55,18 +69,6 @@ else
     end
 end
 
-%=========================================================================%
-% conjugate gradient parameters
-%=========================================================================%
-if(~exist('PCG','var')||isempty(PCG))
-    PCG.tol = 1e-6;
-    PCG.maxiter = 500;
-    PCG.precond = true; % (07/06/2014)
-end
-
-if(~isfield(PCG,'precond')) % (07/06/2014)
-    PCG.precond = true; 
-end
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
@@ -97,10 +99,7 @@ end
 Ct=C';
 CtC=Ct*C;
 Ip=speye(p);
-PCG.A = CtC+2*Ip;
-if PCG.precond; % (07/06/2014)
-    PCG.L = ichol(PCG.A);
-end
+CtC_2Ip = CtC+2*Ip;
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
@@ -127,20 +126,17 @@ for k=1:maxiter
         str='--- %3d out of %d ... Tol=%2.2e (tinner=%4.3fsec, ttotal=%4.3fsec) ---\n';
         fprintf(str,k,maxiter,rel_change,toc(time.inner),toc(time.total))
         time.inner = tic;
-    end
+    end    
     
-    
-    % update w (conjugate gradient)
-    b = (v1+v2-u1-u2) + Ct*(v3-u3);
-    if PCG.precond; % (07/06/2014)
-        [w,~] = pcg(PCG.A, b, PCG.tol, PCG.maxiter, PCG.L,PCG.L', w);
-    else
-        [w,~] = pcg(PCG.A, b, PCG.tol, PCG.maxiter, [],[], w);
-    end
-%     if mod(k,20)==0, keyboard, end;
+    %=====================================================================%
+    % update w (linearized ADM step)
+    %=====================================================================%
+    % L-ADMM prox-gradient term
+    prox_grad = CtC_2Ip*w_old + u1-v1+u2-v2+Ct*(u3-v3);
+    w = w_old - tau*prox_grad; 
 
     %======================================================================
-    % Update primal variables
+    % Update 2nd variable block (v1,v2,v3)
     %======================================================================
     % update v1 (if p > n, apply inversion lemma)
     q=Xty + rho*(w+u1);
@@ -155,7 +151,6 @@ for k=1:maxiter
     
     % update v3
     v3 = soft(C*w+u3,gam/rho);
-
     
     %======================================================================
     % dual updates
