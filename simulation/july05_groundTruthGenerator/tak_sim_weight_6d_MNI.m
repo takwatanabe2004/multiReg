@@ -1,4 +1,4 @@
-function [w,idx_supp,C] = tak_sim_weight_6d_MNI(clusterPath,GRID)
+function [w,idx_supp,C,coord] = tak_sim_weight_6d_MNI(clusterPath,GRID)
 % tak_function
 %=========================================================================%
 % - Comments
@@ -18,7 +18,7 @@ load(clusterPath,'wsupp', 'idx_anomEdgeClusters', 'idx_anomNodeClusters')
 % graph info of the node parcellation
 %=========================================================================%
 graphPath=[get_rootdir, '/data_local/graphinfo/graph_info_',GRID,'.mat'];
-load(graphPath,'C')
+load(graphPath,'C','coord')
 %% create weight vector
 p = size(C,2);
 

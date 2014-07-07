@@ -1,19 +1,15 @@
 clear
 purge
 
-k=1:500;
-% k=1:100:50e3;
-
-figure,imexpl
-subplot(311),tplot(k,log10(1./k))
-subplot(312),tplot(k,log10(1./k.^2))
-subplot(313),tplot(k,log10(1./k)),hold on,plot(k,log10(1./k.^2),'r')
-% plot(k,log10(80./k.^2),'r')
-% figure,imexpl
-% subplot(211)
-
-c=0.95;
-figure,imexpl
-tplot(k,log10(1./k)),hold on,plot(k,log10(1./k.^2),'r')
-plot(k,log10(c.^k),'g')
-legend('1/k','1/k^2','linear')
+t=linspace(-5,5,401);
+lwid=2;
+tau=0.5;
+y = 2;
+plot(t,tak_soft(t,tau),'linewidth',lwid), hold on,grid on
+plot(t,y+tak_soft(t-y,tau),'r','linewidth',lwid)
+y=-2;
+plot(t,y+tak_soft(t-y,tau),'g','linewidth',lwid)
+legend('soft','y=2','y=-2')
+% tplott(t, abs(t-y))
+% 
+% tplott(t, abs(t+y))

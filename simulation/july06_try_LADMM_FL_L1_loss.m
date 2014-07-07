@@ -1,12 +1,14 @@
-%% july06_try_LADMM_FL
+%% july06_try_LADMM_FL_L1_loss
 % (07/06/2014)
 %=========================================================================%
-% - Linearized ADMM version of FL
+% - Try out L1 loss via LADMM
 %=========================================================================%
 %%
 clear all;
 purge
 
+randn('state',0)
+rand('state',0)
 [wtrue,idx_supp,supp_info,C] = tak_sim_weight_4d_tripartite;
 
 nx=supp_info.nx;
@@ -33,12 +35,25 @@ lam=3;
 gam=1;
 
 options.rho = 1;
-options.maxiter = 5000;
+options.maxiter = 1000;
 options.tol = 5e-5;
 options.progress = 500;
 options.silence = false;
-options.funcval = false;
+options.funcval = 1;
     
+%=========================================================================%
+% solve via L1 loss with LADMM
+%=========================================================================%
+[w_L1,output_L1]=tak_FL_regr_LADMM_L1_loss(X,y,0,0,options,C,wtrue);
+Ypr.FL_L1 = Xtest*w_L1;
+MSE.FL_L1 = norm(ytest - Ypr.FL_L1);
+COR.FL_L1 = corr(ytest,  Ypr.FL_L1);
+tak_sim_plot_alg_result(output_L1)
+figure,imexp
+subplot(121),imconn(wtrue,1),CAXIS=caxis;
+subplot(122),imconn(w_L1,1)%,caxis(CAXIS)
+return
+
 %=========================================================================%
 % solve via admm via pcg
 %=========================================================================%
@@ -46,14 +61,6 @@ options.funcval = false;
 Ypr.FLpcg = Xtest*w;
 MSE.FLpcg = norm(ytest - Ypr.FLpcg);
 COR.FLpcg = corr(ytest,  Ypr.FLpcg);
-
-%=========================================================================%
-% solve via linearized ADMM
-%=========================================================================%
-[w_LADM,output_LADM]=tak_FL_regr_LADMM(X,y,lam,gam,options,C,wtrue);
-Ypr.FL_LADM = Xtest*w_LADM;
-MSE.FL_LADM = norm(ytest - Ypr.FL_LADM);
-COR.FL_LADM = corr(ytest,  Ypr.FL_LADM);
 
 %=========================================================================%
 % solve via linearized ADMM with one less splitting
@@ -64,8 +71,8 @@ MSE.FL_LADM2 = norm(ytest - Ypr.FL_LADM2);
 COR.FL_LADM2 = corr(ytest,  Ypr.FL_LADM2);
 %%
 tak_sim_plot_alg_result(output)
-tak_sim_plot_alg_result(output_LADM)
 tak_sim_plot_alg_result(output_LADM2)
+
 
 figure,imexp
 subplot(121),imconn(wtrue,1),CAXIS=caxis;
@@ -73,10 +80,6 @@ subplot(122),imconn(w,1),caxis(CAXIS)
 
 figure,imexp
 subplot(121),imconn(wtrue,1),CAXIS=caxis;
-subplot(122),imconn(w_LADM,1),caxis(CAXIS)
-
-% figure,imexp
-% subplot(121),imconn(wtrue,1),CAXIS=caxis;
-% subplot(122),imconn(w_LADM2,1),caxis(CAXIS)
+subplot(122),imconn(w_LADM2,1),caxis(CAXIS)
 MSE
 COR
