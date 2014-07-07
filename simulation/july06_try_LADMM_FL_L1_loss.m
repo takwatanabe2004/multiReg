@@ -44,7 +44,8 @@ options.funcval = 1;
 %=========================================================================%
 % solve via L1 loss with LADMM
 %=========================================================================%
-[w_L1,output_L1]=tak_FL_regr_LADMM_L1_loss(X,y,0,0,options,C,wtrue);
+[w_L1,output_L1]=tak_FL_regr_LADMM_L1_loss(X,y,lam,gam,options,C,wtrue);
+% [w_L1,output_L1]=tak_FL_regr_LADMM_L1_loss(X,y,0,0,options,C,wtrue);
 Ypr.FL_L1 = Xtest*w_L1;
 MSE.FL_L1 = norm(ytest - Ypr.FL_L1);
 COR.FL_L1 = corr(ytest,  Ypr.FL_L1);

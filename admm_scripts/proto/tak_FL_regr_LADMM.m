@@ -22,7 +22,8 @@ if(~exist('options','var')||isempty(options)),
     rho = 1;
 
     % LADMM stepsize parameter
-    tau = 1/(2+normest(C'*C)^2);
+    tau = 1/(2+normest(C'*C));
+%     tau = 1/(2+normest(C'*C)^2);
     
     maxiter = 500;
     tol = 4e-3;
@@ -41,7 +42,8 @@ else
     if isfield(options,'tau')
         tau = options.tau;
     else
-        tau = 1/(2+normest(C'*C)^2);
+        tau = 1/(2+normest(C'*C));
+%         tau = 1/(2+normest(C'*C)^2);
         % svds(A,1)^2
         % eigs(A'*A,1);
     end

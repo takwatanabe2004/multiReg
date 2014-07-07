@@ -22,7 +22,7 @@ if(~exist('options','var')||isempty(options)),
     rho = 1;
 
     % LADMM stepsize parameter
-    tau = 1/(1+svds(X,1)^2+normest(C'*C)^2);
+    tau = 1/(1+svds(X,1)^2+normest(C'*C));
     
     maxiter = 500;
     tol = 4e-3;
@@ -37,8 +37,8 @@ else
     if isfield(options,'tau')
         tau = options.tau;
     else
-%         tau = 1/(1+svds(X,1)^2+normest(C'*C)^2);
-        tau = 1/(1+tnormest(X)^2+normest(C'*C)^2);
+%         tau = 1/(1+svds(X,1)^2+normest(C'*C));
+        tau = 1/(1+tnormest(X)^2+normest(C'*C));
         
         % svds(A,1)^2
         % eigs(A'*A,1);
@@ -74,6 +74,7 @@ u3 = zeros(e,1);
 % function handles
 %==========================================================================
 soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
+% prox_quad = @(t,tau) t/(tau+1) % prox of 1/2 ||u-v||^2_2
 
 %==========================================================================
 % precompute terms used throughout admm
@@ -91,7 +92,8 @@ CtC_Ip = CtC+Ip;
 % keep track of function value (optional, as it could slow down algorithm)
 %=========================================================================%
 if funcval
-    fval = @(w) 1/2 * norm(y-X*w,1) + lam*norm(w,1) + gam*norm(C*w,1);
+    fval = @(w) norm(y-X*w,1) + lam*norm(w,1) + gam*norm(C*w,1);
+%     fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam*norm(C*w,1);
 end
 %% begin admm iteration
 time.total=tic;
@@ -119,17 +121,19 @@ for k=1:maxiter
     % update w (linearized ADM step)
     %=====================================================================%
     % L-ADMM prox-gradient term
-%     prox_grad = (X'*(X*w_old + u1-v1)) + CtC_Ip*w_old +u2-v2+Ct*(u3-v3);
-    prox_grad = (X'*(Xw + u1-v1)) + CtC_Ip*w_old +u2-v2+Ct*(u3-v3);
+    prox_grad = (X'*(X*w_old + u1-v1)) + CtC_Ip*w_old +u2-v2+Ct*(u3-v3);
+%     prox_grad = (X'*(Xw + u1-v1)) + CtC_Ip*w_old +u2-v2+Ct*(u3-v3);
 %     prox_grad = X'*(X*w) + (CtC + Ip)*w + X'*(u1-v1) + u2-v2 + Ct*(u3-v3);
-    w = w - tau*prox_grad; 
+%     w = w - tau*prox_grad; 
+    w = w_old - tau*prox_grad;
 
     %======================================================================
     % Update 2nd variable block (v1,v2,v3)
     %======================================================================
     % update v1 (translated soft-threshold
-    Xw = X*w; % <- used multiple times, so precompute
-    v1 = y + soft(Xw + u1 - y, 1/rho);
+%     Xw = X*w; % <- used multiple times, so precompute
+    v1 = y + soft(X*w + u1 - y, 1/rho); % <- prox of shifted L1 loss
+%     v1 = (y/rho + Xw+u1)/(1/rho+1); % <- prox of (shifted) L2 loss
     
     % update v2
     v2 = soft(w+u2,lam/rho);
@@ -140,7 +144,7 @@ for k=1:maxiter
     %======================================================================
     % dual updates
     %======================================================================
-    u1=u1+(Xw-v1);
+    u1=u1+(X*w-v1);
     u2=u2+(w-v2);
     u3=u3+(C*w-v3);
 %     if mod(k,50)==0,keyboard,end;
@@ -168,6 +172,12 @@ for k=1:maxiter
     % needed to compute relative change in primal variable
     w_old=w;
 end
+keyboard
+%%
+tplott(X*w-v1)
+tplott(w-v2)
+tplott(C*w-v3)
+%%
 
 time.total=toc(time.total);
 %% organize output

@@ -71,12 +71,12 @@ figure,imexp
 subplot(121),imconn(wtrue,1),CAXIS=caxis;
 subplot(122),imconn(w,1),caxis(CAXIS)
 
-figure,imexp
-subplot(121),imconn(wtrue,1),CAXIS=caxis;
-subplot(122),imconn(w_LADM,1),caxis(CAXIS)
-
 % figure,imexp
 % subplot(121),imconn(wtrue,1),CAXIS=caxis;
-% subplot(122),imconn(w_LADM2,1),caxis(CAXIS)
+% subplot(122),imconn(w_LADM,1),caxis(CAXIS)
+
+figure,imexp
+subplot(121),imconn(wtrue,1),CAXIS=caxis;
+subplot(122),imconn(w_LADM2,1),caxis(CAXIS)
 MSE
 COR
