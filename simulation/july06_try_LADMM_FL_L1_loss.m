@@ -34,7 +34,8 @@ ytest = Xtest*wtrue;
 lam=3;
 gam=1;
 
-options.rho = 1;
+% options.rho = 1;
+options.rho = 111;
 options.maxiter = 1000;
 options.tol = 5e-5;
 options.progress = 500;
