@@ -19,6 +19,6 @@ end
 title(inputname(1),'Interpreter','none')
 axis('on','image');
 % colorbar
-colorbar('location','southoutside')
+% colorbar('location','southoutside')
 impixelinfo
 drawnow
