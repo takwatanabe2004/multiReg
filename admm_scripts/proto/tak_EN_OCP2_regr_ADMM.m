@@ -1,33 +1,34 @@
-function [w,output]=tak_GN_regr_FISTA(X,y,lam,gam,options,C,wtrue)
-% [w,output]=tak_GN_regr_FISTA(X,y,lam,gam,options,C,wtrue)
-% (06/18/2014)
+function [W,output]=tak_EN_OCP2_regr_ADMM(X,Y,lam,gam,eta,options,F,Wtrue)
+% [W,output]=tak_admm_EN_regr_MTL(X,Y,lam,gam,options,Wtrue)
 %=========================================================================%
-% - ISTA GraphNet regression:
-%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||C*w||^2
+% - ADMM elastic net + OCP2 regression:
+%    1/2||Y-Xw||^2 + lambda \sum_j||W_j||_2 + gamma/2||W||^2
+%                                           + lam \sum_j ||Fw_j||_1
 %=========================================================================%
 % options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
+%=========================================================================%
+% (07/09/2014)
 %% sort out 'options'
-p=size(X,2);
+[n,p]=size(X);
+q=size(Y,2);
 
-%=========================================================================%
-% ISTA paramter and termination criteria
-%=========================================================================%
+ef=size(F,1);
 if(~exist('options','var')||isempty(options)),     
+    rho = 1;
+    
     maxiter = 500;
     tol = 5e-4;
     progress = inf;
     silence = false;
     funcval = false;
-    
-    tau = 1/(tnormest(X)^2+gam*tnormest(C'*C));
-else
-    % step size (needs knowledge of spectral norm of hessian)
-    if isfield(options,'tau')
-        tau = options.tau;
-    else
-        tau = 1/(tnormest(X)^2+gam*tnormest(C'*C));
+
+    if p > n
+        K=tak_admm_inv_lemma(X,1/(gam+2*rho));
     end
+else
+    % augmented lagrangian parameters
+    rho=options.rho;
 
     %=====================================================================%
     % termination criterion
@@ -37,13 +38,33 @@ else
     progress  = options.progress;    % <- display "progress" (every k iterations)
     silence   = options.silence;     % <- display termination condition
     funcval   = options.funcval;     % <- track function values (may slow alg.)
+
+    %=====================================================================%
+    % Matrix K for inversion lemma 
+    % (optionally precomputed...saves time during gridsearch)
+    % (only use inversion lemma when p > n...else solve matrix inverse directly)
+    %=====================================================================%
+    if p > n
+        if isfield(options,'K')
+            K=options.K;
+        else
+            K=tak_admm_inv_lemma(X,1/(gam+2*rho));
+        end
+    end
 end
+
 %% initialize variables, function handles, and terms used through admm steps
 %==========================================================================
 % initialize variables
 %==========================================================================
-w  = zeros(p,1); 
-v  = zeros(p,1); 
+% primal variable
+W  = zeros(p,q); 
+V1 = zeros(p,q);
+V2 = zeros(p,q);
+
+% dual variables
+U1 = zeros(p,q);
+U2 = zeros(p,q);
 
 %==========================================================================
 % function handles
@@ -53,36 +74,37 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 %==========================================================================
 % precompute terms used throughout admm
 %==========================================================================
-Xty=(X'*y);
-Xt=X';
-CtC=C'*C;
-
-%=========================================================================%
-% gradient function handle
-%=========================================================================%
-GRAD = @(w) Xt*(X*w) - Xty + gam * CtC*w;
-
-%=========================================================================%
-% keep track of function value (optional, as it could slow down algorithm)
-%=========================================================================%
-if funcval
-    fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam/2*norm(C*w)^2;
+XtY=(X'*Y);
+if n >= p
+    XtX = X'*X;
 end
+FtF = F'*F;
+
+% the right-multiplying inverse term for the V2-update
+M = rho*speye(q) + eta*FtF; 
+% Minv = inv(M);
+
+%=========================================================================%
+% keep track of function value
+%=========================================================================%
+vec = @(W)W(:);
+fval = @(W) 1/2 * norm( vec(Y-X*W) )^2 + gam/2*norm(W(:))^2 ...
+                                       + lam*norm(W(:),1) ...
+                                       + eta/2*norm(vec(F*W'))^2;
 %% begin admm iteration
 time.total=tic;
 time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
-w_old=w;
-t=1;
+W_old=W;
 % disp('go')
 
 % keep track of function value
 if funcval, fvalues=zeros(maxiter,1); end;
-if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
+if exist('Wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    if funcval,  fvalues(k)=fval(w); end;   
-    if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
+    if funcval,  fvalues(k)=fval(W); end;   
+    if exist('Wtrue','var'), wdist(k)=norm(W(:)-Wtrue(:)); end;
     
     if mod(k,progress)==0 && k~=1
         str='--- %3d out of %d ... Tol=%2.2e (tinner=%4.3fsec, ttotal=%4.3fsec) ---\n';
@@ -91,24 +113,43 @@ for k=1:maxiter
     end
     
     %======================================================================
-    % FISTA step
-    %=====================================================================%
-    w = soft(v - tau*GRAD(v), lam*tau);
-    t_old = t;
-    t = (1+sqrt(1+4*t^2))/2;
-    v = w + ((t_old-1)/t) * (w - w_old);
-%     keyboard
+    % update first variable block: (W)
+    %======================================================================
+    % update W
+    Q=(XtY + rho*(V1-U1+V2-U2));
+    if p > n        
+        W = Q/(gam+2*rho) - 1/(gam+2*rho)^2*(K*(X*Q));
+    else
+        W = (XtX + (gam+2*rho)*speye(p))\Q;
+    end
+    
+    %======================================================================
+    % update second variable block: (V1,V2)
+    %======================================================================    
+    % update V1
+    V1 = soft(W+U1,lam/rho);
+    
+    % update V2
+%     V2 = rho*(W+U2)*inv(M);
+    TMP = (W+U2)';
+    V2 = rho*(M\TMP)';
+    
+    %======================================================================
+    % dual updates
+    %======================================================================
+    U1=U1+(W-V1);
+    U2=U2+(W-V2);
 
     %======================================================================
     % Check termination criteria
     %======================================================================
     %%% relative change in primal variable norm %%%
-    rel_change=norm(w-w_old)/norm(w_old);
+    rel_change=norm(W(:)-W_old(:))/norm(W_old(:));
     rel_changevec(k)=rel_change;
     time.rel_change=tic;
     
     flag1=rel_change<tol;
-    if flag1 && (k>30) % allow 30 iterations of burn-in period
+    if flag1 && (k>111) % allow 30 iterations of burn-in period
         if ~silence
             fprintf('*** Primal var. tolerance reached!!! tol=%6.3e (%d iter, %4.3f sec)\n',rel_change,k,toc(time.total))
         end
@@ -120,13 +161,14 @@ for k=1:maxiter
     end     
     
     % needed to compute relative change in primal variable
-    w_old=w;
+    W_old=W;
 end
 
 time.total=toc(time.total);
 %% organize output
 % primal variables
-% output.w=v2;
+W=V1;
+% output.w=v;
 % output.v=v;
 
 % dual variables
@@ -144,16 +186,16 @@ time.total=toc(time.total);
 % the "track-record" of the relative change in primal variable
 output.rel_changevec=rel_changevec(1:k);
 
-% (optional) final function value
+% function value 
 if funcval,  
-    fvalues(k+1)=fval(w); 
+    fvalues(k+1)=fval(W); % <- final function value
     fvalues=fvalues(1:k+1);
     output.fval=fvalues;
 end;
 
 % (optional) distance to wtrue
-if exist('wtrue','var')
-    wdist(k+1)=norm(w-wtrue); % <- final function value
+if exist('Wtrue','var')
+    wdist(k+1)=norm(W(:)-Wtrue(:)); 
     wdist=wdist(1:k+1);
     output.wdist=wdist;
 end;

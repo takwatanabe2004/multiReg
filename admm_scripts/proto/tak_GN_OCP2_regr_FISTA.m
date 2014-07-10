@@ -1,32 +1,35 @@
-function [w,output]=tak_GN_regr_FISTA(X,y,lam,gam,options,C,wtrue)
-% [w,output]=tak_GN_regr_FISTA(X,y,lam,gam,options,C,wtrue)
-% (06/18/2014)
+function [W,output]=tak_GN_OCP2_regr_FISTA(X,Y,lam,gam,eta,options,C,F,wtrue)
+% [W,output]=tak_GN_OCP2_regr_FISTA(X,Y,lam,gam,eta,options,C,F,wtrue)
 %=========================================================================%
-% - ISTA GraphNet regression:
-%    1/2||y-Xw||^2 + lam * ||w||_1 + gam/2 * ||C*w||^2
+% - FISTA elastic net + OCP2 regression:
+%    1/2||Y-Xw||^2 + lambda \sum_j||W_j||_2 + gamma/2||W||^2
+%                                           + eta/2 ||Fw_j||_1
 %=========================================================================%
-% options.K <- optionally precompute
 % wtrue <- optional...measure norm(west-wtrue) over iterations if inputted
+%=========================================================================%
+% (07/09/2014)
 %% sort out 'options'
 p=size(X,2);
+q=size(Y,2);
 
 %=========================================================================%
 % ISTA paramter and termination criteria
 %=========================================================================%
-if(~exist('options','var')||isempty(options)),     
+if(~exist('options','var')||isempty(options)),        
     maxiter = 500;
     tol = 5e-4;
     progress = inf;
     silence = false;
     funcval = false;
     
-    tau = 1/(tnormest(X)^2+gam*tnormest(C'*C));
+    % step size (needs knowledge of spectral norm of hessian)
+    tau = 1/(tnormest(X)^2+gam*tnormest(C'*C)+eta*tnormest(F'*F));
 else
     % step size (needs knowledge of spectral norm of hessian)
     if isfield(options,'tau')
         tau = options.tau;
     else
-        tau = 1/(tnormest(X)^2+gam*tnormest(C'*C));
+        tau = 1/(tnormest(X)^2+gam*tnormest(C'*C)+eta*tnormest(F'*F));
     end
 
     %=====================================================================%
@@ -42,8 +45,8 @@ end
 %==========================================================================
 % initialize variables
 %==========================================================================
-w  = zeros(p,1); 
-v  = zeros(p,1); 
+W  = zeros(p,q); 
+V  = zeros(p,q); % <- needed for fista step
 
 %==========================================================================
 % function handles
@@ -53,36 +56,39 @@ soft=@(t,tau) sign(t).*max(0,abs(t)-tau); % soft-thresholder
 %==========================================================================
 % precompute terms used throughout admm
 %==========================================================================
-Xty=(X'*y);
+Xty=(X'*Y);
 Xt=X';
+FtF=F'*F;
 CtC=C'*C;
 
 %=========================================================================%
 % gradient function handle
 %=========================================================================%
-GRAD = @(w) Xt*(X*w) - Xty + gam * CtC*w;
+GRAD = @(W) Xt*(X*W) - Xty + gam*(CtC*W) + eta*(W*FtF);
 
 %=========================================================================%
 % keep track of function value (optional, as it could slow down algorithm)
 %=========================================================================%
-if funcval
-    fval = @(w) 1/2 * norm(y-X*w)^2 + lam*norm(w,1) + gam/2*norm(C*w)^2;
-end
+vec = @(W)W(:);
+
+fval = @(W) 1/2 * norm( vec(Y-X*W) )^2 + gam/2*norm(vec(C*W))^2 ...
+                                       + lam*norm(W(:),1) ...
+                                       + eta/2*norm(vec(F*W'))^2;
 %% begin admm iteration
 time.total=tic;
 time.inner=tic;
 
 rel_changevec=zeros(maxiter,1);
-w_old=w;
-t=1;
+W_old=W;
+t=1; % <- needed for fista
 % disp('go')
 
 % keep track of function value
 if funcval, fvalues=zeros(maxiter,1); end;
 if exist('wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    if funcval,  fvalues(k)=fval(w); end;   
-    if exist('wtrue','var'), wdist(k)=norm(w-wtrue); end;
+    if funcval,  fvalues(k)=fval(W); end;   
+    if exist('wtrue','var'), wdist(k)=norm(W(:)-wtrue(:)); end;
     
     if mod(k,progress)==0 && k~=1
         str='--- %3d out of %d ... Tol=%2.2e (tinner=%4.3fsec, ttotal=%4.3fsec) ---\n';
@@ -93,17 +99,17 @@ for k=1:maxiter
     %======================================================================
     % FISTA step
     %=====================================================================%
-    w = soft(v - tau*GRAD(v), lam*tau);
+    W = soft(V - tau*GRAD(V),lam*tau);
     t_old = t;
     t = (1+sqrt(1+4*t^2))/2;
-    v = w + ((t_old-1)/t) * (w - w_old);
+    V = W + ((t_old-1)/t) * (W - W_old);
 %     keyboard
 
     %======================================================================
     % Check termination criteria
     %======================================================================
     %%% relative change in primal variable norm %%%
-    rel_change=norm(w-w_old)/norm(w_old);
+    rel_change=norm(W(:)-W_old(:))/norm(W_old(:));
     rel_changevec(k)=rel_change;
     time.rel_change=tic;
     
@@ -120,7 +126,7 @@ for k=1:maxiter
     end     
     
     % needed to compute relative change in primal variable
-    w_old=w;
+    W_old=W;
 end
 
 time.total=toc(time.total);
@@ -146,14 +152,14 @@ output.rel_changevec=rel_changevec(1:k);
 
 % (optional) final function value
 if funcval,  
-    fvalues(k+1)=fval(w); 
+    fvalues(k+1)=fval(W); 
     fvalues=fvalues(1:k+1);
     output.fval=fvalues;
 end;
 
 % (optional) distance to wtrue
 if exist('wtrue','var')
-    wdist(k+1)=norm(w-wtrue); % <- final function value
+    wdist(k+1)=norm(W(:)-wtrue(:)); % <- final function value
     wdist=wdist(1:k+1);
     output.wdist=wdist;
 end;

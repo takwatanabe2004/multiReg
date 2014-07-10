@@ -1,4 +1,4 @@
-%% july07_corrWeight_dictMethod_fcn_patch1d.m.m
+%% july07_save_correlatedSmoothOutput1d.m.m
 % (07/07/2014)
 %=========================================================================%
 % - Test script for my new function for adding patches
@@ -15,12 +15,20 @@ purge
 % randn('state',0)
 % rand('state',0)
 
-p = 8e3;
+p = 1e3;
 q = 15;
 
-numClusters = 3;
+%=========================================================================%
+% numClusters: determines the number of "clusters" in the set of
+%              output weight vectors.  Each "clustesr" of weight vectors
+%              will receive (weighted) basis elemetns from its own dictnoary
+%   d: # atoms per dictinoary
+%   nsubset: # dictinoary atoms a weight vector receives.  If this equals d,
+%            each cluster should have the exact same shared supprot
+%=========================================================================%
+numClusters = 3; % <- determines # of dictionaries
 d = 5; % <- # atoms per dictionary
-nsubset = 4;
+nsubset = 5; % <- # dictionary atoms a weight vector receives
 %% create (q x q) positive definite matrix
 S = zeros(q,q);
 
@@ -46,9 +54,9 @@ for ind_c = 1:numClusters
     D = zeros(p,d); % dictionary matrix
     for id=1:d
 %         nPatches = 3;
-        nPatches = randsample(4,1) + 4; % {3,...,5}
-        pulseLenBase = round(p/2000)*(randsample(3,1)+2);
-        D(:,id) = tak_sim_assignPulse1d(p,nPatches,pulseLenBase)/100;
+        nPatches = randsample(3,1) + 2; % {3,...,5}
+        pulseLenBase = round(p/500)*(randsample(2,1)+2);
+        D(:,id) = tak_sim_assignPulse1d(p,nPatches,pulseLenBase)/50;
     end
     Dlist{ind_c}=D;
 end
@@ -135,5 +143,4 @@ subplot(313),tplot(W(:,idxCluster{3}))
 rootdir=fileparts(mfilename('fullpath'));
 mFileName=mfilename;
 timeStamp=tak_timestamp;
-% save([rootdir,'/correlatedWeight_1d_smooth1.mat'],'W','idxCluster','mFileName','timeStamp')
-% save([rootdir,'/correlatedWeight_1d_patch1.mat'],'W','idxCluster','mFileName','timeStamp')
+% save([rootdir,'/correlatedWeight_1d_smooth2.mat'],'W','idxCluster','mFileName','timeStamp')

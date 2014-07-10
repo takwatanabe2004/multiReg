@@ -24,7 +24,7 @@ for ipatch = 1:nPatches
     %=====================================================================%
     intervalWidth = round(p/nPatches);
     offset = intervalWidth*(ipatch-1);
-    patchStart = offset+randsample(intervalWidth-patchLen,1); %
+    patchStart = offset+randsample(intervalWidth-patchLen-1,1); %
     
     %         W(patchStart+1:patchStart+patchLen,iq) = tak_sample_signed_unif([5,10],1);
     tmp = zeros(p,1);

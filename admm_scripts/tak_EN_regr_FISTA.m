@@ -19,9 +19,16 @@ if(~exist('options','var')||isempty(options)),
     progress = inf;
     silence = false;
     funcval = false;
+    
+    % step size (needs knowledge of spectral norm of hessian)
+    tau = 1/(tnormest(X)^2+gam);
 else
     % step size (needs knowledge of spectral norm of hessian)
-    tau = options.tau;
+    if isfield(options,'tau')
+        tau = options.tau;
+    else
+        tau = 1/(tnormest(X)^2+gam);
+    end
 
     %=====================================================================%
     % termination criterion

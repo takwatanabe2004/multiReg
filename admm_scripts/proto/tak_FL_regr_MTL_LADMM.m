@@ -203,6 +203,20 @@ end
 % keyboard
 time.total=toc(time.total);
 %% organize output
+% (optional) final function value
+if funcval,  
+    fvalues(k+1)=fval(W); 
+    fvalues=fvalues(1:k+1);
+    output.fval=fvalues;
+end;
+
+% (optional) distance to wtrue
+if exist('wtrue','var')
+    wdist(k+1)=norm(W(:)-wtrue(:)); % <- final function value
+    wdist=wdist(1:k+1);
+    output.wdist=wdist;
+end;
+
 % primal variables
 W=V1;
 % output.w=v2;
@@ -223,16 +237,4 @@ W=V1;
 % the "track-record" of the relative change in primal variable
 output.rel_changevec=rel_changevec(1:k);
 
-% (optional) final function value
-if funcval,  
-    fvalues(k+1)=fval(W); 
-    fvalues=fvalues(1:k+1);
-    output.fval=fvalues;
-end;
 
-% (optional) distance to wtrue
-if exist('wtrue','var')
-    wdist(k+1)=norm(W(:)-wtrue(:)); % <- final function value
-    wdist=wdist(1:k+1);
-    output.wdist=wdist;
-end;

@@ -17,7 +17,7 @@ for ipatch = 1:nPatches
     patchLen = patchLenBase * (3+randsample(3,1)); % patchLen \in K*{4,5,6}
     
     % frequency (if numerator here = 2, it means full sinusoidal cycle)       
-    freq = randsample(4,1)/(1*patchLen);
+    freq = randsample(6,1)/(1*patchLen);
         
     % magnitude of sinusoidal pulses
     mag = tak_sample_signed_unif([5,12],1);
@@ -31,7 +31,7 @@ for ipatch = 1:nPatches
     %=====================================================================%
     intervalWidth = round(p/nPatches);
     offset = intervalWidth*(ipatch-1);
-    patchStart = offset+randsample(intervalWidth-patchLen,1); %
+    patchStart = offset+randsample(intervalWidth-patchLen-1,1); %
     
     %         W(patchStart+1:patchStart+patchLen,iq) = tak_sample_signed_unif([5,10],1);
     tmp = zeros(p,1);

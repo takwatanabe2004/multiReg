@@ -102,8 +102,8 @@ W_old=W;
 if funcval, fvalues=zeros(maxiter,1); end;
 if exist('Wtrue','var'), wdist=zeros(maxiter,1); end;
 for k=1:maxiter
-    if funcval,  fvalues(k)=fval(V); end;   
-    if exist('Wtrue','var'), wdist(k)=norm(V(:)-Wtrue(:)); end;
+    if funcval,  fvalues(k)=fval(W); end;   
+    if exist('Wtrue','var'), wdist(k)=norm(W(:)-Wtrue(:)); end;
     
     if mod(k,progress)==0 && k~=1
         str='--- %3d out of %d ... Tol=%2.2e (tinner=%4.3fsec, ttotal=%4.3fsec) ---\n';
@@ -190,14 +190,14 @@ output.rel_changevec=rel_changevec(1:k);
 
 % function value 
 if funcval,  
-    fvalues(k+1)=fval(V); % <- final function value
+    fvalues(k+1)=fval(W); % <- final function value
     fvalues=fvalues(1:k+1);
     output.fval=fvalues;
 end;
 
 % (optional) distance to wtrue
 if exist('Wtrue','var')
-    wdist(k+1)=norm(V(:)-Wtrue(:)); 
+    wdist(k+1)=norm(W(:)-Wtrue(:)); 
     wdist=wdist(1:k+1);
     output.wdist=wdist;
 end;

@@ -20,11 +20,12 @@ rand('state',0)
 
 rootdir = fileparts(mfilename('fullpath'));
 
-load([rootdir,'/correlatedWeight_1d_patch1.mat'],'W','idxCluster')
+load([rootdir,'/correlatedWeight_1d_patch3.mat'],'W','idxCluster')
+% load([rootdir,'/correlatedWeight_1d_smooth2.mat'],'W','idxCluster')
 %%
 [p,q]=size(W);
 %% make data
-n=500;
+n=800;
 ntest=100;
 
 sig=5;
@@ -45,7 +46,7 @@ Ytest = Xtest*W;
 Ycorr = corr(Y);
 
 % partial correlation (comment line below to use simple correlation)
-Ycorr = tak_icov2pcorr(inv(Ycorr));
+% Ycorr = tak_icov2pcorr(inv(Ycorr));
 
 Ycorr_abs = abs(Ycorr);
 
@@ -76,20 +77,21 @@ Ycorr_abs = abs(Ycorr);
 %-------------------------------------------------------------------------%
 % use weighted adjacency matrix
 %-------------------------------------------------------------------------%
-outputAdjmat = (Ycorr_abs>(0.2)).*Ycorr;
+outputAdjmat = (Ycorr_abs>(0.3)).*Ycorr;
 outputAdjmat = outputAdjmat - diag(diag(outputAdjmat)); % zero off the diagonal (for adj2inc function)
-F = tak_adjmat2incmat_july2014(outputAdjmat,1);
-
+F = tak_adjmat2incmat_july2014(outputAdjmat,0);
+% F=-F;
+%%
 %-------------------------------------------------------------------------%
 % visualize
 %-------------------------------------------------------------------------%
-% figure,imexpb
-% subplot(131),imcov(F)
-% subplot(132),imcov(outputAdjmat)
-% subplot(133),imcov(F'*F,1), title('F''F')
+figure,imexpb
+subplot(131),imcov(F)
+subplot(132),imcov(outputAdjmat)
+subplot(133),imcov(F'*F,1), title('F''F')
 % return
 %%
-options.rho = .5;
+options.rho = 5;
     
 options.maxiter = 500;
 options.tol = 1e-3;
@@ -112,15 +114,15 @@ CORR.EN_STL = corr(Ytest(:), Ypr.EN_STL(:));
 % CORR.EN_MTL = corr(Ytest(:), Ypr.EN_MTL(:));
 %% FL_OCP1         [W,output]=tak_FL_OCP1_regr_LADMM(X,Y,lam,gam,eta,options,C,F,wtrue)
 lam1=5;
-gam1=30;
-    eta1=5/100;
+gam1=120;
+eta1=10;
 [West.FL_OCP1,output.FL_OCP1]=tak_FL_OCP1_regr_LADMM(X,Y,lam1,gam1,eta1,options,C,F,W);
 Ypr.FL_OCP1 = Xtest*West.FL_OCP1;
 CORR.FL_OCP1 = corr(Ytest(:), Ypr.FL_OCP1(:))
 % return
 %% FL-LADM
 lam1=5;
-gam1=30;
+gam1=120;
 options.MTL = false;
 [West.FL_STL,output.FL_STL]=tak_FL_regr_MTL_LADMM(X,Y,lam1,gam1,options,C,W);
 Ypr.FL_STL = Xtest*West.FL_STL;
